@@ -59,9 +59,11 @@ export default function RequestDetailsPage() {
   const [loadError, setLoadError] = useState<{ status: number; message: string } | null>(null)
   const [refreshing, setRefreshing] = useState(false)
 
+  // הודעה שהגיעה מהטופס: הצלחה (flash) או שגיאה (flashError - למשל 409 בעריכה)
   const [notice, setNotice] = useState<Notice | null>(() => {
-    const flash = (location.state as { flash?: string } | null)?.flash
-    return flash ? { kind: 'success', title: flash } : null
+    const state = location.state as { flash?: string; flashError?: string } | null
+    if (state?.flashError) return { kind: 'error', title: 'השינויים לא נשמרו', text: state.flashError }
+    return state?.flash ? { kind: 'success', title: state.flash } : null
   })
   const [assigning, setAssigning] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)

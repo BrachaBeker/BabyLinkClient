@@ -39,6 +39,7 @@
 }
 
 .auth-hero .brand {
+  align-self: flex-start;
   color: #fff;
 }
 

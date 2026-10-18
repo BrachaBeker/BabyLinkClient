@@ -56,7 +56,9 @@ export default function LoginPage() {
             ))}
           </ul>
         </div>
-        <p className="auth-hero-foot">פרויקט סיום · .NET 10 Web API + React</p>
+        <p className="auth-hero-foot">
+          פרויקט סיום · <bdi dir="ltr">.NET 10 Web API + React</bdi>
+        </p>
       </aside>
 
       <section className="auth-panel">
