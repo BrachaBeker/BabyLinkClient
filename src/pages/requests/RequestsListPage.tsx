@@ -1,6 +1,19 @@
 // מסך 2: רשימת הבקשות עם סינון, מיון ו-Pagination.
 // מצב הסינון נשמר ב-URL (?city=...&page=2), כך שרענון או חזרה ממסך הפרטים שומרים עליו.
-import { ArrowDownWideNarrow, ArrowUpNarrowWide, Inbox, MapPin, Plus, RotateCcw, SearchX } from 'lucide-react'
+// לשמרטפית יש שלוש לשוניות: פנויות (ברירת מחדל), כל הבקשות, והשיבוצים שלי.
+import {
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
+  CalendarCheck,
+  Inbox,
+  LayoutGrid,
+  MapPin,
+  Plus,
+  RotateCcw,
+  SearchX,
+  Sparkles,
+  type LucideIcon,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { babylinkApi } from '../../api/babylink'
@@ -18,21 +31,56 @@ import './requests.css'
 const PAGE_SIZE = 9
 const DEBOUNCE_MS = 400
 
+type SitterView = 'available' | 'all' | 'mine'
+
+const SITTER_VIEWS: { value: SitterView; label: string; Icon: LucideIcon; emptyTitle: string; emptyText: string }[] = [
+  {
+    value: 'available',
+    label: 'פנויות',
+    Icon: Sparkles,
+    emptyTitle: 'אין כרגע בקשות פנויות',
+    emptyText: 'כשהורים יפרסמו בקשות חדשות - הן יופיעו כאן.',
+  },
+  {
+    value: 'all',
+    label: 'כל הבקשות',
+    Icon: LayoutGrid,
+    emptyTitle: 'אין בקשות להצגה',
+    emptyText: 'כשהורים יפרסמו בקשות - הן יופיעו כאן.',
+  },
+  {
+    value: 'mine',
+    label: 'השיבוצים שלי',
+    Icon: CalendarCheck,
+    emptyTitle: 'עדיין לא תפסת בקשות',
+    emptyText: 'בקשות שתתפסי יופיעו כאן.',
+  },
+]
+
 function positiveNumber(value: string | null) {
   const n = value ? Number(value) : NaN
   return Number.isFinite(n) && n > 0 ? n : undefined
 }
 
+// הלשונית של השמרטפית נשמרת ב-URL (?view=all / ?view=mine). בלי פרמטר - "פנויות".
+function readSitterView(params: URLSearchParams): SitterView {
+  const view = params.get('view')
+  return view === 'all' || view === 'mine' ? view : 'available'
+}
+
 // URL -> פרמטרים לשרת
-function readQuery(params: URLSearchParams): ServiceRequestQuery {
+function readQuery(params: URLSearchParams, isParent: boolean): ServiceRequestQuery {
+  const view = readSitterView(params)
+  const onlyAvailable = isParent ? params.get('available') === '1' : view === 'available'
   return {
     city: params.get('city') ?? undefined,
     street: params.get('street') ?? undefined,
     tagId: positiveNumber(params.get('tag')),
     minHourlyRate: positiveNumber(params.get('minRate')),
-    onlyAvailable: params.get('available') === '1',
-    mine: params.get('mine') === '1',
-    includePast: params.get('past') === '1',
+    onlyAvailable,
+    mine: isParent ? params.get('mine') === '1' : view === 'mine',
+    // בקשה פנויה תמיד עתידית, ולכן "כולל עבר" לא רלוונטי לה
+    includePast: !onlyAvailable && params.get('past') === '1',
     sortBy: params.get('sort') === 'hourlyRate' ? 'hourlyRate' : 'startTime',
     descending: params.get('desc') === '1',
     page: positiveNumber(params.get('page')) ?? 1,
@@ -47,7 +95,8 @@ export default function RequestsListPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const query = readQuery(params)
+  const sitterView = readSitterView(params)
+  const query = readQuery(params, isParent)
   const queryKey = params.toString()
 
   // שדות טקסט - מקומיים, ומתעדכנים ב-URL אחרי הפסקה קצרה בהקלדה (debounce)
@@ -101,7 +150,7 @@ export default function RequestsListPage() {
     setLoading(true)
     setError(null)
     babylinkApi
-      .getRequests(readQuery(new URLSearchParams(queryKey)), controller.signal)
+      .getRequests(readQuery(new URLSearchParams(queryKey), isParent), controller.signal)
       .then((result) => {
         setData(result)
         setLoading(false)
@@ -112,7 +161,7 @@ export default function RequestsListPage() {
         setLoading(false)
       })
     return () => controller.abort()
-  }, [queryKey, reloadKey])
+  }, [queryKey, reloadKey, isParent])
 
   // אם העמוד הנוכחי כבר לא קיים (למשל אחרי מחיקה) - עוברים לעמוד האחרון
   useEffect(() => {
@@ -124,11 +173,22 @@ export default function RequestsListPage() {
 
   const hasFilters = ['city', 'street', 'tag', 'minRate', 'available', 'mine', 'past'].some((key) => params.has(key))
 
+  // הלשונית של השמרטפית היא ניווט ולא סינון - "ניקוי" משאיר אותה
   function resetFilters() {
     setCityInput('')
     setStreetInput('')
     setMinRateInput('')
-    setParams(new URLSearchParams(), { replace: true })
+    const next = new URLSearchParams()
+    const view = params.get('view')
+    if (view) next.set('view', view)
+    setParams(next, { replace: true })
+  }
+
+  function changeSitterView(view: SitterView) {
+    updateParams({
+      view: view === 'available' ? undefined : view,
+      ...(view === 'available' ? { past: undefined } : {}),
+    })
   }
 
   function changePage(page: number) {
@@ -137,6 +197,24 @@ export default function RequestsListPage() {
   }
 
   const firstLoad = loading && !data
+  const currentSitterView = SITTER_VIEWS.find((v) => v.value === sitterView) ?? SITTER_VIEWS[0]
+
+  const pastToggle = (
+    <button
+      type="button"
+      className={`toggle-chip ${query.includePast ? 'on' : ''}`}
+      aria-pressed={query.includePast}
+      onClick={() =>
+        // ברירת המחדל מהשרת: רק בקשות עתידיות. כאן אפשר להוסיף גם את אלה שעבר זמנן.
+        updateParams({
+          past: query.includePast ? undefined : '1',
+          ...(!query.includePast ? { available: undefined } : {}),
+        })
+      }
+    >
+      כולל בקשות שעבר זמנן
+    </button>
+  )
 
   return (
     <>
@@ -161,6 +239,24 @@ export default function RequestsListPage() {
         <Alert variant="success" onClose={() => setFlash(null)} className="list-flash">
           {flash}
         </Alert>
+      )}
+
+      {!isParent && (
+        <div className="view-tabs" role="tablist" aria-label="תצוגת הבקשות">
+          {SITTER_VIEWS.map(({ value, label, Icon }) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={sitterView === value}
+              className={`view-tab ${sitterView === value ? 'active' : ''}`}
+              onClick={() => changeSitterView(value)}
+            >
+              <Icon size={16} />
+              {label}
+            </button>
+          ))}
+        </div>
       )}
 
       {/* ---- סינון ומיון ---- */}
@@ -227,50 +323,36 @@ export default function RequestsListPage() {
 
         <div className="filters-bar">
           <div className="toggle-group">
-            <button
-              type="button"
-              className={`toggle-chip ${query.onlyAvailable ? 'on' : ''}`}
-              aria-pressed={query.onlyAvailable}
-              onClick={() =>
-                // לשמרטפית "השיבוצים שלי" = בקשות שכבר תפסה, כך שהן אף פעם לא פנויות - הסינונים בלעדיים.
-                // להורה השילוב הגיוני: הבקשות שלי שעוד לא נתפסו.
-                // "פנויה" תמיד עתידית, ולכן גם "כולל עבר" מתבטל.
-                updateParams({
-                  available: query.onlyAvailable ? undefined : '1',
-                  ...(!query.onlyAvailable ? { past: undefined } : {}),
-                  ...(!isParent && !query.onlyAvailable ? { mine: undefined } : {}),
-                })
-              }
-            >
-              רק פנויות
-            </button>
-            <button
-              type="button"
-              className={`toggle-chip ${query.mine ? 'on' : ''}`}
-              aria-pressed={query.mine}
-              onClick={() =>
-                updateParams({
-                  mine: query.mine ? undefined : '1',
-                  ...(!isParent && !query.mine ? { available: undefined } : {}),
-                })
-              }
-            >
-              {isParent ? 'הבקשות שלי' : 'השיבוצים שלי'}
-            </button>
-            <button
-              type="button"
-              className={`toggle-chip ${query.includePast ? 'on' : ''}`}
-              aria-pressed={query.includePast}
-              onClick={() =>
-                // ברירת המחדל מהשרת: רק בקשות עתידיות. כאן אפשר להוסיף גם את אלה שעבר זמנן.
-                updateParams({
-                  past: query.includePast ? undefined : '1',
-                  ...(!query.includePast ? { available: undefined } : {}),
-                })
-              }
-            >
-              כולל בקשות שעבר זמנן
-            </button>
+            {isParent ? (
+              <>
+                <button
+                  type="button"
+                  className={`toggle-chip ${query.onlyAvailable ? 'on' : ''}`}
+                  aria-pressed={query.onlyAvailable}
+                  onClick={() =>
+                    // "פנויה" תמיד עתידית, ולכן "כולל עבר" מתבטל
+                    updateParams({
+                      available: query.onlyAvailable ? undefined : '1',
+                      ...(!query.onlyAvailable ? { past: undefined } : {}),
+                    })
+                  }
+                >
+                  רק פנויות
+                </button>
+                <button
+                  type="button"
+                  className={`toggle-chip ${query.mine ? 'on' : ''}`}
+                  aria-pressed={query.mine}
+                  onClick={() => updateParams({ mine: query.mine ? undefined : '1' })}
+                >
+                  הבקשות שלי
+                </button>
+                {pastToggle}
+              </>
+            ) : (
+              // בלשונית "פנויות" אין בקשות שעבר זמנן, ולכן הכפתור מופיע רק בשתי האחרות
+              sitterView !== 'available' && pastToggle
+            )}
             {hasFilters && (
               <button type="button" className="btn btn-ghost btn-sm" onClick={resetFilters}>
                 <RotateCcw size={15} />
@@ -329,17 +411,29 @@ export default function RequestsListPage() {
                 </button>
               }
             />
-          ) : (
+          ) : isParent ? (
             <EmptyState
               Icon={Inbox}
               title="אין עדיין בקשות"
-              text={isParent ? 'פרסמו את הבקשה הראשונה שלכם.' : 'כשהורים יפרסמו בקשות - הן יופיעו כאן.'}
+              text="פרסמו את הבקשה הראשונה שלכם."
               action={
-                isParent && (
-                  <Link to="/requests/new" className="btn btn-primary">
-                    <Plus size={18} />
-                    בקשה חדשה
-                  </Link>
+                <Link to="/requests/new" className="btn btn-primary">
+                  <Plus size={18} />
+                  בקשה חדשה
+                </Link>
+              }
+            />
+          ) : (
+            <EmptyState
+              Icon={currentSitterView.Icon}
+              title={currentSitterView.emptyTitle}
+              text={currentSitterView.emptyText}
+              action={
+                sitterView !== 'all' && (
+                  <button type="button" className="btn btn-secondary" onClick={() => changeSitterView('all')}>
+                    <LayoutGrid size={16} />
+                    לכל הבקשות
+                  </button>
                 )
               }
             />

@@ -280,9 +280,32 @@
   font-size: 0.92rem;
 }
 
-.person-note {
+.person-hint {
   font-size: 0.82rem;
   color: var(--muted);
+}
+
+/* שמרטפית שזהותה חסויה */
+.person-avatar-hidden {
+  color: var(--neutral);
+  background: var(--neutral-bg);
+}
+
+/* מתי נתפסה הבקשה (פרטים לא מזהים) */
+.assigned-time {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+.assigned-time span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 @media (max-width: 900px) {

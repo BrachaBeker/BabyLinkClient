@@ -52,6 +52,17 @@ export function formatDuration(startIso: string, endIso: string) {
   return rest ? `${hoursText} ו-${rest} דק'` : hoursText
 }
 
+// משך בין שני רגעים בניסוח קצר: "פחות מדקה", "8 דקות", "שעתיים", "3 ימים"
+export function formatElapsed(fromIso: string, toIso: string) {
+  const minutes = Math.max(0, Math.round((new Date(toIso).getTime() - new Date(fromIso).getTime()) / 60000))
+  if (minutes < 1) return 'פחות מדקה'
+  if (minutes < 60) return minutes === 1 ? 'דקה' : `${minutes} דקות`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return hours === 1 ? 'שעה' : hours === 2 ? 'שעתיים' : `${hours} שעות`
+  const days = Math.round(hours / 24)
+  return days === 1 ? 'יום' : days === 2 ? 'יומיים' : `${days} ימים`
+}
+
 const currencyFormatter = new Intl.NumberFormat('he-IL', {
   style: 'currency',
   currency: 'ILS',

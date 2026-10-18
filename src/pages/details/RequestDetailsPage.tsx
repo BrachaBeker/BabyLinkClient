@@ -2,13 +2,14 @@
 //
 // תרחיש ה-409: שתי שמרטפיות פותחות את אותה בקשה פנויה. הראשונה לוחצת "אני לוקחת" ומקבלת 200.
 // השנייה עדיין רואה "פנויה" (המסך שלה לא התעדכן), לוחצת - והשרת מחזיר 409. אצלה מוצגת הודעה
-// בולטת עם ה-detail מהשרת, והבקשה נטענת מחדש מיד - כך שהיא רואה "נתפסה" ואת שם מי שתפסה.
+// בולטת עם ה-detail מהשרת, והבקשה נטענת מחדש מיד - כך שהיא רואה "נתפסה" ומתי (בלי לדעת מי תפסה).
 import {
   ArrowRight,
   Baby,
   CalendarDays,
   CheckCircle2,
   Clock,
+  EyeOff,
   FileText,
   Hand,
   Home,
@@ -20,8 +21,9 @@ import {
   Tag as TagIcon,
   Trash2,
   UserRound,
+  Zap,
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { babylinkApi } from '../../api/babylink'
 import { isApiError } from '../../api/client'
@@ -38,6 +40,7 @@ import {
   formatDate,
   formatDateTime,
   formatDuration,
+  formatElapsed,
   formatTimeRange,
   totalEarnings,
 } from '../../utils/format'
@@ -378,15 +381,36 @@ export default function RequestDetailsPage() {
 
           <PersonCard title="ההורה" name={request.parentFullName} phone={request.parentPhone} />
 
-          {request.isAssigned && request.assignedBabysitterFullName && (
-            <PersonCard
-              title="השמרטפית שתפסה"
-              name={request.assignedBabysitterFullName}
-              phone={request.assignedBabysitterPhone}
-              note={request.assignedAtUtc ? `נתפסה ${formatDateTime(request.assignedAtUtc)}` : undefined}
-              highlight
-            />
-          )}
+          {/* את זהות השמרטפית שתפסה השרת מחזיר רק להורה שפרסם ולשמרטפית עצמה. לשאר - פרטים לא מזהים בלבד. */}
+          {request.isAssigned &&
+            (request.assignedBabysitterFullName ? (
+              <PersonCard
+                title="השמרטפית שתפסה"
+                name={request.assignedBabysitterFullName}
+                phone={request.assignedBabysitterPhone}
+                highlight
+              >
+                {request.assignedAtUtc && (
+                  <AssignedTime createdAtUtc={request.createdAtUtc} assignedAtUtc={request.assignedAtUtc} />
+                )}
+              </PersonCard>
+            ) : (
+              <section className="card card-body person-card">
+                <span className="person-title">השמרטפית שתפסה</span>
+                <div className="person-row">
+                  <span className="person-avatar person-avatar-hidden">
+                    <EyeOff size={20} />
+                  </span>
+                  <div className="person-info">
+                    <strong>פרטים חסויים</strong>
+                    <span className="person-hint">גלויים רק להורה שפרסם ולשמרטפית שתפסה</span>
+                  </div>
+                </div>
+                {request.assignedAtUtc && (
+                  <AssignedTime createdAtUtc={request.createdAtUtc} assignedAtUtc={request.assignedAtUtc} />
+                )}
+              </section>
+            ))}
         </aside>
       </div>
 
@@ -423,15 +447,31 @@ function InfoItem({ Icon, label, value }: { Icon: typeof Clock; label: string; v
   )
 }
 
+// מתי נתפסה הבקשה, וכמה זמן אחרי שפורסמה - פרטים לא מזהים, גלויים לכולם
+function AssignedTime({ createdAtUtc, assignedAtUtc }: { createdAtUtc: string; assignedAtUtc: string }) {
+  return (
+    <div className="assigned-time">
+      <span>
+        <Clock size={14} />
+        נתפסה ב-{formatDateTime(assignedAtUtc)}
+      </span>
+      <span>
+        <Zap size={14} />
+        תוך {formatElapsed(createdAtUtc, assignedAtUtc)} מרגע הפרסום
+      </span>
+    </div>
+  )
+}
+
 interface PersonCardProps {
   title: string
   name: string
   phone: string | null
-  note?: string
   highlight?: boolean
+  children?: ReactNode
 }
 
-function PersonCard({ title, name, phone, note, highlight }: PersonCardProps) {
+function PersonCard({ title, name, phone, highlight, children }: PersonCardProps) {
   return (
     <section className={`card card-body person-card ${highlight ? 'highlight' : ''}`}>
       <span className="person-title">{title}</span>
@@ -449,7 +489,7 @@ function PersonCard({ title, name, phone, note, highlight }: PersonCardProps) {
           )}
         </div>
       </div>
-      {note && <span className="person-note">{note}</span>}
+      {children}
     </section>
   )
 }
