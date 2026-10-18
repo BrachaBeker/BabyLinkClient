@@ -116,8 +116,13 @@ export default function RequestDetailsPage() {
     if (location.state) navigate(location.pathname, { replace: true, state: null })
   }, [location, navigate])
 
+  // מונה הפעולות המקומיות (טעינה, תפיסה, ביטול שיבוץ). תשובה של העדכון החי שיצאה לפני פעולה כזו
+  // יכולה להגיע אחריה עם מצב ישן (למשל "פנויה" אחרי 409) - ואז מתעלמים ממנה.
+  const actionSeq = useRef(0)
+
   const load = useCallback(
     async (signal?: AbortSignal) => {
+      actionSeq.current++
       try {
         const result = await babylinkApi.getRequest(requestId, signal)
         setRequest(result)
@@ -155,7 +160,7 @@ export default function RequestDetailsPage() {
   }
 
   // עדכון חי: כל 10 שניות טוענים את הבקשה מחדש בשקט. אם משהו השתנה בגלל מישהו אחר - מסבירים מה קרה.
-  // לא מרעננים באמצע פעולה (תפיסה / ביטול), כדי לא להתנגש בתוצאה שלה.
+  // לא מרעננים באמצע פעולה (תפיסה / ביטול), ותשובה שהגיעה אחרי פעולה כזו כבר ישנה - כדי לא לדרוס את התוצאה שלה.
   // שימו לב: גם עם עדכון חי, שמרטפית שלוחצת לפני שהמסך התעדכן תקבל 409 - השרת הוא ההגנה האמיתית.
   const requestRef = useRef(request)
   useEffect(() => {
@@ -164,8 +169,10 @@ export default function RequestDetailsPage() {
   usePolling(
     async () => {
       if (busy) return
+      const seq = actionSeq.current
       try {
         const fresh = await babylinkApi.getRequest(requestId)
+        if (seq !== actionSeq.current) return
         const prev = requestRef.current
         if (!prev || sameData(prev, fresh)) return
         const change = describeChange(prev, fresh, user?.id)
@@ -183,6 +190,7 @@ export default function RequestDetailsPage() {
 
   // ---- תפיסה (שמרטפית) ----
   async function handleAssign() {
+    actionSeq.current++
     setNotice(null)
     setAssigning(true)
     try {
@@ -212,6 +220,7 @@ export default function RequestDetailsPage() {
   // ---- ביטול השיבוץ (השמרטפית שתפסה) ----
   // הבקשה חוזרת להמתין לשמרטפית, וההורה מקבל הודעה. 409 = הבקשה השתנתה בינתיים (למשל ההורה ביטל).
   async function handleUnassign() {
+    actionSeq.current++
     setUnassigning(true)
     try {
       await babylinkApi.unassignRequest(requestId)

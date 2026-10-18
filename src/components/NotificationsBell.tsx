@@ -61,11 +61,13 @@ export default function NotificationsBell() {
   const [ring, setRing] = useState(false)
   const loadedOnce = useRef(false)
   const knownIds = useRef(new Set<number>())
+  // הודעות שנסגרו כאן. טעינה שיצאה לפני שהמחיקה נשמרה בשרת עדיין מחזירה אותן - לא מציגים אותן שוב.
+  const dismissedIds = useRef(new Set<number>())
   const containerRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
 
   async function load(signal?: AbortSignal) {
-    const list = await babylinkApi.getNotifications(signal)
+    const list = (await babylinkApi.getNotifications(signal)).filter((n) => !dismissedIds.current.has(n.id))
     const hasNew = list.some((n) => !knownIds.current.has(n.id))
     knownIds.current = new Set(list.map((n) => n.id))
 
@@ -111,11 +113,13 @@ export default function NotificationsBell() {
 
   // עדכון אופטימי: ההודעה נעלמת מיד, והמחיקה בשרת רצה ברקע
   function dismiss(id: number) {
+    dismissedIds.current.add(id)
     setItems((prev) => prev.filter((n) => n.id !== id))
     babylinkApi.dismissNotification(id).catch(() => undefined)
   }
 
   function dismissAll() {
+    items.forEach((n) => dismissedIds.current.add(n.id))
     setItems([])
     setOpen(false)
     babylinkApi.dismissAllNotifications().catch(() => undefined)
