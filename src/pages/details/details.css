@@ -1,0 +1,275 @@
+/* מסך פרטי הבקשה */
+
+.details-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.details-title-row .spinner {
+  color: var(--primary);
+}
+
+.details-notice {
+  margin-bottom: 18px;
+}
+
+/* הודעת 409 - בולטת במיוחד, עם "רעידה" קצרה כדי שלא תפוספס */
+.alert-conflict {
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border-width: 1.5px;
+  border-color: #ef9a9a;
+  box-shadow: 0 14px 34px -18px rgba(198, 40, 40, 0.6);
+  animation: shake 0.45s ease;
+}
+
+.alert-conflict .alert-title {
+  font-size: 1.08rem;
+}
+
+.conflict-note {
+  margin-top: 6px;
+  font-size: 0.86rem;
+  opacity: 0.8;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.details-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  align-items: start;
+}
+
+.details-aside {
+  position: sticky;
+  top: 88px;
+}
+
+/* ---- פרטים ---- */
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.info-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  color: var(--primary);
+  background: var(--primary-50);
+}
+
+.info-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.info-value {
+  display: block;
+  font-weight: 600;
+}
+
+.address-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.address-line svg {
+  color: var(--muted);
+}
+
+.address-notes {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.description {
+  white-space: pre-line;
+  color: #3b3950;
+}
+
+.tag-lg {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 0.88rem;
+}
+
+/* ---- כרטיס פעולה ---- */
+
+.action-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.price {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.price span {
+  margin-inline-start: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.take-btn {
+  height: 56px;
+  font-size: 1.12rem;
+}
+
+.action-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+.owner-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.state-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+}
+
+.state-box svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.state-box strong {
+  display: block;
+}
+
+.state-box span {
+  font-size: 0.88rem;
+}
+
+.state-mine {
+  color: #14532d;
+  background: var(--success-bg);
+}
+
+.state-taken {
+  color: var(--primary-600);
+  background: var(--primary-50);
+}
+
+.state-expired {
+  color: var(--neutral);
+  background: var(--neutral-bg);
+}
+
+/* ---- אנשי קשר ---- */
+
+.person-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.person-card.highlight {
+  border-color: #cfc9ff;
+  background: linear-gradient(180deg, #faf9ff, #fff);
+}
+
+.person-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.person-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.person-avatar {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: var(--primary-600);
+  background: var(--primary-100);
+}
+
+.person-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.person-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.92rem;
+}
+
+.person-note {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  .details-layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* במובייל - כרטיס הפעולה ("אני לוקחת") מופיע ראשון */
+  .details-aside {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
