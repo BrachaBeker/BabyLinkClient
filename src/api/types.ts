@@ -8,16 +8,45 @@ export interface UserDto {
   fullName: string
   phone: string
   city: string
+  street: string | null
+  houseNumber: string | null
   role: UserRole
 }
 
+// רחוב ומספר בית - חובה להורה בלבד (לשמרטפית השרת לא שומר אותם)
 export interface RegisterRequest {
   email: string
   password: string
   fullName: string
   phone: string
   city: string
+  street?: string | null
+  houseNumber?: string | null
   role: UserRole
+}
+
+// עדכון פרופיל (PUT /api/users/{id}) - בלי אימייל, סיסמה ותפקיד
+export interface UpdateUserRequest {
+  fullName: string
+  phone: string
+  city: string
+  street?: string | null
+  houseNumber?: string | null
+}
+
+export type NotificationType = 'RequestCancelled'
+
+// הודעה למשתמש. פרטי הבקשה שמורים בהודעה, כי בקשה שבוטלה כבר נמחקה.
+export interface NotificationDto {
+  id: number
+  type: NotificationType
+  requestStartTimeUtc: string
+  requestEndTimeUtc: string
+  city: string
+  street: string
+  houseNumber: string
+  parentFullName: string
+  createdAtUtc: string
 }
 
 export interface LoginRequest {
@@ -99,7 +128,11 @@ export interface ServiceRequestBody {
 
 export type SortBy = 'startTime' | 'hourlyRate'
 
+// open - ממתינה לשמרטפית, assigned - שובצה ועוד לא התחילה, past - מועדה עבר
+export type RequestStatus = 'open' | 'assigned' | 'past'
+
 export interface ServiceRequestQuery {
+  status?: RequestStatus
   city?: string
   street?: string
   fromUtc?: string

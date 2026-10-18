@@ -130,7 +130,186 @@ button, input, select, textarea {
 .topbar-user {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+}
+
+/* המשתמש המחובר - קישור לפרופיל */
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  color: var(--text);
+  transition: background 0.15s;
+}
+
+.user-chip:hover {
+  background: var(--neutral-bg);
+}
+
+.user-chip:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* ---------- פעמון ההודעות ---------- */
+
+.notif {
+  position: relative;
+}
+
+.notif-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.notif-button:hover,
+.notif-button[aria-expanded='true'] {
+  color: var(--text);
+  background: var(--neutral-bg);
+}
+
+.notif-button.has-items {
+  color: var(--primary-600);
+}
+
+.notif-button:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.notif-count {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 2px solid var(--surface);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--danger);
+}
+
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  inset-inline-end: -8px;
+  z-index: 40;
+  width: 360px;
+  max-height: 440px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: pop-in 0.15s ease;
+}
+
+.notif-head {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.notif-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.notif-list {
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.notif-item + .notif-item {
+  margin-top: 4px;
+}
+
+.notif-item:hover {
+  background: var(--surface-2);
+}
+
+.notif-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.notif-body {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.88rem;
+}
+
+.notif-body strong {
+  display: block;
+  font-size: 0.92rem;
+}
+
+.notif-body p {
+  margin-top: 2px;
+  color: #3b3950;
+}
+
+.notif-time {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: var(--subtle);
+}
+
+.notif-dismiss {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 8px;
+  color: var(--subtle);
+  background: transparent;
+  cursor: pointer;
+}
+
+.notif-dismiss:hover {
+  color: var(--text);
+  background: var(--neutral-bg);
 }
 
 .avatar {
@@ -198,6 +377,10 @@ button, input, select, textarea {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.nowrap {
+  white-space: nowrap;
 }
 
 /* ---------- Card ---------- */
@@ -523,6 +706,11 @@ button, input, select, textarea {
   background: var(--neutral-bg);
 }
 
+.badge-done {
+  color: #0f766e;
+  background: #e3f5f2;
+}
+
 .tag-list {
   display: flex;
   flex-wrap: wrap;
@@ -691,5 +879,18 @@ button, input, select, textarea {
 
   .user-meta {
     display: none;
+  }
+
+  .user-chip {
+    padding: 4px;
+  }
+
+  /* במובייל - חלונית ההודעות ברוחב המסך, מתחת לסרגל */
+  .notif-panel {
+    position: fixed;
+    top: 68px;
+    right: 12px;
+    left: 12px;
+    width: auto;
   }
 }

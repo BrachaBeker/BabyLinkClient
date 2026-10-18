@@ -302,3 +302,8 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* הסבר קצר מתחת לכתובת בהרשמה של הורה */
+.address-hint {
+  margin-top: -6px;
+}

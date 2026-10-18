@@ -7,10 +7,23 @@ import Alert from '../../components/Alert'
 import FormField from '../../components/FormField'
 import { Spinner, useSlowNotice, WakeNote } from '../../components/Loading'
 
-type FormState = Omit<RegisterRequest, 'role'> & { role: UserRole | '' }
+type FormState = Omit<RegisterRequest, 'role' | 'street' | 'houseNumber'> & {
+  role: UserRole | ''
+  street: string
+  houseNumber: string
+}
 type Errors = Partial<Record<keyof FormState, string>>
 
-const EMPTY: FormState = { fullName: '', email: '', phone: '', city: '', password: '', role: '' }
+const EMPTY: FormState = {
+  fullName: '',
+  email: '',
+  phone: '',
+  city: '',
+  street: '',
+  houseNumber: '',
+  password: '',
+  role: '',
+}
 
 const ROLES: { value: UserRole; title: string; text: string; Icon: typeof Baby }[] = [
   { value: 'Parent', title: 'הורה', text: 'מפרסם/ת בקשות שמרטפות', Icon: Baby },
@@ -26,6 +39,11 @@ function validate(form: FormState): Errors {
   if (!form.phone.trim()) errors.phone = 'שדה חובה'
   else if (!/^[\d\s+()-]{7,20}$/.test(form.phone.trim())) errors.phone = 'מספר טלפון לא תקין'
   if (!form.city.trim()) errors.city = 'שדה חובה'
+  // להורה - כתובת מלאה (ממנה ממולאת מראש כל בקשה חדשה)
+  if (form.role === 'Parent') {
+    if (!form.street.trim()) errors.street = 'שדה חובה'
+    if (!form.houseNumber.trim()) errors.houseNumber = 'שדה חובה'
+  }
   if (form.password.length < 8) errors.password = 'לפחות 8 תווים'
   if (!form.role) errors.role = 'יש לבחור תפקיד'
   return errors
@@ -38,6 +56,7 @@ export default function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const slow = useSlowNotice(submitting)
+  const isParent = form.role === 'Parent'
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -59,6 +78,8 @@ export default function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         email: form.email.trim(),
         phone: form.phone.trim(),
         city: form.city.trim(),
+        street: isParent ? form.street.trim() : null,
+        houseNumber: isParent ? form.houseNumber.trim() : null,
         password: form.password,
         role: form.role as UserRole,
       })
@@ -156,6 +177,31 @@ export default function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
             onChange={(e) => update('city', e.target.value)}
           />
         </FormField>
+
+        {isParent && (
+          <>
+            <FormField label="רחוב" htmlFor="reg-street" error={errors.street}>
+              <input
+                id="reg-street"
+                className={inputClass('street')}
+                autoComplete="address-line1"
+                value={form.street}
+                onChange={(e) => update('street', e.target.value)}
+              />
+            </FormField>
+            <FormField label="מספר בית" htmlFor="reg-house" error={errors.houseNumber}>
+              <input
+                id="reg-house"
+                className={inputClass('houseNumber')}
+                value={form.houseNumber}
+                onChange={(e) => update('houseNumber', e.target.value)}
+              />
+            </FormField>
+            <p className="field-hint span-2 address-hint">
+              הכתובת תמולא אוטומטית בכל בקשה חדשה (ואפשר לשנות אותה בבקשה עצמה או בפרופיל).
+            </p>
+          </>
+        )}
 
         <FormField label="סיסמה" htmlFor="reg-password" error={errors.password} hint="לפחות 8 תווים" className="span-2">
           <input

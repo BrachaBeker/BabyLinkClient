@@ -1,24 +1,26 @@
-// מסך 2: רשימת הבקשות עם סינון, מיון ו-Pagination.
-// מצב הסינון נשמר ב-URL (?city=...&page=2), כך שרענון או חזרה ממסך הפרטים שומרים עליו.
-// לשמרטפית יש שלוש לשוניות: פנויות (ברירת מחדל), כל הבקשות, והשיבוצים שלי.
+// מסך 2: רשימת הבקשות, עם לשוניות לפי תפקיד, ו-Pagination.
+// שמרטפית: "פנויות" (ברירת מחדל) ו"השיבוצים שלי" (עם לוח השבוע הקרוב), כולל סינון ומיון.
+// הורה: רק הבקשות שלו (השרת אוכף), בשלוש לשוניות לפי סטטוס - בלי סינון לפי עיר וכו'.
+// הלשונית והסינון נשמרים ב-URL (?view=mine&city=...), כך שרענון או חזרה ממסך הפרטים שומרים עליהם.
 import {
   ArrowDownWideNarrow,
   ArrowUpNarrowWide,
   CalendarCheck,
-  Inbox,
-  LayoutGrid,
+  History,
+  Hourglass,
   MapPin,
   Plus,
   RotateCcw,
   SearchX,
   Sparkles,
+  UserCheck,
   type LucideIcon,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { babylinkApi } from '../../api/babylink'
 import { isApiError } from '../../api/client'
-import type { PagedResult, ServiceRequestListItem, ServiceRequestQuery } from '../../api/types'
+import type { PagedResult, RequestStatus, ServiceRequestListItem, ServiceRequestQuery } from '../../api/types'
 import { useAuth } from '../../auth/AuthContext'
 import Alert from '../../components/Alert'
 import EmptyState from '../../components/EmptyState'
@@ -26,14 +28,23 @@ import { LoadingState, Spinner } from '../../components/Loading'
 import Pagination from '../../components/Pagination'
 import { useTags } from '../../hooks/useTags'
 import RequestCard from './RequestCard'
+import WeekSchedule from './WeekSchedule'
 import './requests.css'
 
 const PAGE_SIZE = 9
 const DEBOUNCE_MS = 400
 
-type SitterView = 'available' | 'all' | 'mine'
+type View = 'available' | 'mine' | RequestStatus
 
-const SITTER_VIEWS: { value: SitterView; label: string; Icon: LucideIcon; emptyTitle: string; emptyText: string }[] = [
+interface ViewConfig {
+  value: View
+  label: string
+  Icon: LucideIcon
+  emptyTitle: string
+  emptyText: string
+}
+
+const SITTER_VIEWS: ViewConfig[] = [
   {
     value: 'available',
     label: 'פנויות',
@@ -42,18 +53,35 @@ const SITTER_VIEWS: { value: SitterView; label: string; Icon: LucideIcon; emptyT
     emptyText: 'כשהורים יפרסמו בקשות חדשות - הן יופיעו כאן.',
   },
   {
-    value: 'all',
-    label: 'כל הבקשות',
-    Icon: LayoutGrid,
-    emptyTitle: 'אין בקשות להצגה',
-    emptyText: 'כשהורים יפרסמו בקשות - הן יופיעו כאן.',
-  },
-  {
     value: 'mine',
     label: 'השיבוצים שלי',
     Icon: CalendarCheck,
     emptyTitle: 'עדיין לא תפסת בקשות',
-    emptyText: 'בקשות שתתפסי יופיעו כאן.',
+    emptyText: 'בקשות שתתפסי יופיעו כאן ובלוח השבוע.',
+  },
+]
+
+const PARENT_VIEWS: ViewConfig[] = [
+  {
+    value: 'open',
+    label: 'ממתינות לשמרטפית',
+    Icon: Hourglass,
+    emptyTitle: 'אין בקשות שממתינות לשמרטפית',
+    emptyText: 'פרסמו בקשה חדשה, והיא תופיע כאן עד ששמרטפית תתפוס אותה.',
+  },
+  {
+    value: 'assigned',
+    label: 'נמצאה שמרטפית',
+    Icon: UserCheck,
+    emptyTitle: 'עוד אין בקשות שנתפסו',
+    emptyText: 'כששמרטפית תתפוס בקשה שלכם - היא תופיע כאן.',
+  },
+  {
+    value: 'past',
+    label: 'היסטוריה',
+    Icon: History,
+    emptyTitle: 'אין עדיין היסטוריה',
+    emptyText: 'בקשות שהמועד שלהן עבר יופיעו כאן.',
   },
 ]
 
@@ -62,28 +90,35 @@ function positiveNumber(value: string | null) {
   return Number.isFinite(n) && n > 0 ? n : undefined
 }
 
-// הלשונית של השמרטפית נשמרת ב-URL (?view=all / ?view=mine). בלי פרמטר - "פנויות".
-function readSitterView(params: URLSearchParams): SitterView {
-  const view = params.get('view')
-  return view === 'all' || view === 'mine' ? view : 'available'
+// הלשונית מה-URL (?view=...). ערך לא מוכר - הלשונית הראשונה של התפקיד.
+function readView(params: URLSearchParams, isParent: boolean): View {
+  const views = isParent ? PARENT_VIEWS : SITTER_VIEWS
+  return views.find((v) => v.value === params.get('view'))?.value ?? views[0].value
 }
 
 // URL -> פרמטרים לשרת
 function readQuery(params: URLSearchParams, isParent: boolean): ServiceRequestQuery {
-  const view = readSitterView(params)
-  const onlyAvailable = isParent ? params.get('available') === '1' : view === 'available'
+  const view = readView(params, isParent)
+  const page = positiveNumber(params.get('page')) ?? 1
+
+  // הורה: הסטטוס של הלשונית, הקרובות קודם (ובהיסטוריה - האחרונות קודם)
+  if (isParent) {
+    return { status: view as RequestStatus, sortBy: 'startTime', descending: view === 'past', page, pageSize: PAGE_SIZE }
+  }
+
+  const onlyAvailable = view === 'available'
   return {
     city: params.get('city') ?? undefined,
     street: params.get('street') ?? undefined,
     tagId: positiveNumber(params.get('tag')),
     minHourlyRate: positiveNumber(params.get('minRate')),
     onlyAvailable,
-    mine: isParent ? params.get('mine') === '1' : view === 'mine',
+    mine: view === 'mine',
     // בקשה פנויה תמיד עתידית, ולכן "כולל עבר" לא רלוונטי לה
     includePast: !onlyAvailable && params.get('past') === '1',
     sortBy: params.get('sort') === 'hourlyRate' ? 'hourlyRate' : 'startTime',
     descending: params.get('desc') === '1',
-    page: positiveNumber(params.get('page')) ?? 1,
+    page,
     pageSize: PAGE_SIZE,
   }
 }
@@ -95,7 +130,9 @@ export default function RequestsListPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const sitterView = readSitterView(params)
+  const views = isParent ? PARENT_VIEWS : SITTER_VIEWS
+  const view = readView(params, isParent)
+  const currentView = views.find((v) => v.value === view) ?? views[0]
   const query = readQuery(params, isParent)
   const queryKey = params.toString()
 
@@ -109,7 +146,7 @@ export default function RequestsListPage() {
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
 
-  // הודעה שהגיעה ממסך אחר (למשל "הבקשה נמחקה")
+  // הודעה שהגיעה ממסך אחר (למשל "הבקשה בוטלה")
   const [flash, setFlash] = useState<string | null>(
     (location.state as { flash?: string } | null)?.flash ?? null,
   )
@@ -163,7 +200,7 @@ export default function RequestsListPage() {
     return () => controller.abort()
   }, [queryKey, reloadKey, isParent])
 
-  // אם העמוד הנוכחי כבר לא קיים (למשל אחרי מחיקה) - עוברים לעמוד האחרון
+  // אם העמוד הנוכחי כבר לא קיים (למשל אחרי ביטול) - עוברים לעמוד האחרון
   useEffect(() => {
     if (data && data.items.length === 0 && data.totalPages > 0 && data.page > data.totalPages) {
       updateParams({ page: String(data.totalPages) }, false)
@@ -171,23 +208,24 @@ export default function RequestsListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
 
-  const hasFilters = ['city', 'street', 'tag', 'minRate', 'available', 'mine', 'past'].some((key) => params.has(key))
+  const hasFilters = !isParent && ['city', 'street', 'tag', 'minRate', 'past'].some((key) => params.has(key))
 
-  // הלשונית של השמרטפית היא ניווט ולא סינון - "ניקוי" משאיר אותה
+  // הלשונית היא ניווט ולא סינון - "ניקוי" משאיר אותה
   function resetFilters() {
     setCityInput('')
     setStreetInput('')
     setMinRateInput('')
     const next = new URLSearchParams()
-    const view = params.get('view')
-    if (view) next.set('view', view)
+    const current = params.get('view')
+    if (current) next.set('view', current)
     setParams(next, { replace: true })
   }
 
-  function changeSitterView(view: SitterView) {
+  function changeView(value: View) {
+    const isDefault = value === views[0].value
     updateParams({
-      view: view === 'available' ? undefined : view,
-      ...(view === 'available' ? { past: undefined } : {}),
+      view: isDefault ? undefined : value,
+      ...(value === 'available' ? { past: undefined } : {}),
     })
   }
 
@@ -197,33 +235,15 @@ export default function RequestsListPage() {
   }
 
   const firstLoad = loading && !data
-  const currentSitterView = SITTER_VIEWS.find((v) => v.value === sitterView) ?? SITTER_VIEWS[0]
-
-  const pastToggle = (
-    <button
-      type="button"
-      className={`toggle-chip ${query.includePast ? 'on' : ''}`}
-      aria-pressed={query.includePast}
-      onClick={() =>
-        // ברירת המחדל מהשרת: רק בקשות עתידיות. כאן אפשר להוסיף גם את אלה שעבר זמנן.
-        updateParams({
-          past: query.includePast ? undefined : '1',
-          ...(!query.includePast ? { available: undefined } : {}),
-        })
-      }
-    >
-      כולל בקשות שעבר זמנן
-    </button>
-  )
 
   return (
     <>
       <div className="page-header">
         <div>
-          <h1 className="page-title">בקשות שמרטפות</h1>
+          <h1 className="page-title">{isParent ? 'הבקשות שלי' : 'בקשות שמרטפות'}</h1>
           <p className="page-subtitle">
             {isParent
-              ? 'פרסמו בקשה חדשה, או עקבו אחרי הבקשות שלכם.'
+              ? 'פרסמו בקשה חדשה ועקבו אחרי הבקשות שלכם.'
               : 'מצאי בקשה שמתאימה לך ולחצי "אני לוקחת" - הראשונה שתופסת זוכה.'}
           </p>
         </div>
@@ -241,151 +261,132 @@ export default function RequestsListPage() {
         </Alert>
       )}
 
+      <div className="view-tabs" role="tablist" aria-label="תצוגת הבקשות">
+        {views.map(({ value, label, Icon }) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={view === value}
+            className={`view-tab ${view === value ? 'active' : ''}`}
+            onClick={() => changeView(value)}
+          >
+            <Icon size={16} />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ---- סינון ומיון (לשמרטפית בלבד - להורה יש רק את הבקשות שלו) ---- */}
       {!isParent && (
-        <div className="view-tabs" role="tablist" aria-label="תצוגת הבקשות">
-          {SITTER_VIEWS.map(({ value, label, Icon }) => (
-            <button
-              key={value}
-              type="button"
-              role="tab"
-              aria-selected={sitterView === value}
-              className={`view-tab ${sitterView === value ? 'active' : ''}`}
-              onClick={() => changeSitterView(value)}
-            >
-              <Icon size={16} />
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
+        <section className="card filters" aria-label="סינון ומיון">
+          <div className="filters-grid">
+            <div className="field">
+              <label className="field-label" htmlFor="f-city">
+                עיר
+              </label>
+              <input
+                id="f-city"
+                className="input"
+                placeholder="כל הערים"
+                value={cityInput}
+                onChange={(e) => setCityInput(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label className="field-label" htmlFor="f-street">
+                רחוב
+              </label>
+              <input
+                id="f-street"
+                className="input"
+                placeholder="כל הרחובות"
+                value={streetInput}
+                onChange={(e) => setStreetInput(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label className="field-label" htmlFor="f-tag">
+                תגית
+              </label>
+              <select
+                id="f-tag"
+                className="select"
+                value={params.get('tag') ?? ''}
+                onChange={(e) => updateParams({ tag: e.target.value })}
+              >
+                <option value="">כל התגיות</option>
+                {tags.map((tag) => (
+                  <option key={tag.id} value={tag.id}>
+                    {tag.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label className="field-label" htmlFor="f-rate">
+                תעריף מינימלי לשעה
+              </label>
+              <input
+                id="f-rate"
+                className="input"
+                type="number"
+                min={0}
+                inputMode="decimal"
+                placeholder="₪ ללא מינימום"
+                value={minRateInput}
+                onChange={(e) => setMinRateInput(e.target.value)}
+              />
+            </div>
+          </div>
 
-      {/* ---- סינון ומיון ---- */}
-      <section className="card filters" aria-label="סינון ומיון">
-        <div className="filters-grid">
-          <div className="field">
-            <label className="field-label" htmlFor="f-city">
-              עיר
-            </label>
-            <input
-              id="f-city"
-              className="input"
-              placeholder="כל הערים"
-              value={cityInput}
-              onChange={(e) => setCityInput(e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label className="field-label" htmlFor="f-street">
-              רחוב
-            </label>
-            <input
-              id="f-street"
-              className="input"
-              placeholder="כל הרחובות"
-              value={streetInput}
-              onChange={(e) => setStreetInput(e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label className="field-label" htmlFor="f-tag">
-              תגית
-            </label>
-            <select
-              id="f-tag"
-              className="select"
-              value={params.get('tag') ?? ''}
-              onChange={(e) => updateParams({ tag: e.target.value })}
-            >
-              <option value="">כל התגיות</option>
-              {tags.map((tag) => (
-                <option key={tag.id} value={tag.id}>
-                  {tag.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label className="field-label" htmlFor="f-rate">
-              תעריף מינימלי לשעה
-            </label>
-            <input
-              id="f-rate"
-              className="input"
-              type="number"
-              min={0}
-              inputMode="decimal"
-              placeholder="₪ ללא מינימום"
-              value={minRateInput}
-              onChange={(e) => setMinRateInput(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="filters-bar">
-          <div className="toggle-group">
-            {isParent ? (
-              <>
+          <div className="filters-bar">
+            <div className="toggle-group">
+              {/* בלשונית "פנויות" אין בקשות שעבר זמנן */}
+              {view === 'mine' && (
                 <button
                   type="button"
-                  className={`toggle-chip ${query.onlyAvailable ? 'on' : ''}`}
-                  aria-pressed={query.onlyAvailable}
-                  onClick={() =>
-                    // "פנויה" תמיד עתידית, ולכן "כולל עבר" מתבטל
-                    updateParams({
-                      available: query.onlyAvailable ? undefined : '1',
-                      ...(!query.onlyAvailable ? { past: undefined } : {}),
-                    })
-                  }
+                  className={`toggle-chip ${query.includePast ? 'on' : ''}`}
+                  aria-pressed={query.includePast}
+                  onClick={() => updateParams({ past: query.includePast ? undefined : '1' })}
                 >
-                  רק פנויות
+                  כולל שיבוצים שעבר זמנם
                 </button>
-                <button
-                  type="button"
-                  className={`toggle-chip ${query.mine ? 'on' : ''}`}
-                  aria-pressed={query.mine}
-                  onClick={() => updateParams({ mine: query.mine ? undefined : '1' })}
-                >
-                  הבקשות שלי
+              )}
+              {hasFilters && (
+                <button type="button" className="btn btn-ghost btn-sm" onClick={resetFilters}>
+                  <RotateCcw size={15} />
+                  ניקוי
                 </button>
-                {pastToggle}
-              </>
-            ) : (
-              // בלשונית "פנויות" אין בקשות שעבר זמנן, ולכן הכפתור מופיע רק בשתי האחרות
-              sitterView !== 'available' && pastToggle
-            )}
-            {hasFilters && (
-              <button type="button" className="btn btn-ghost btn-sm" onClick={resetFilters}>
-                <RotateCcw size={15} />
-                ניקוי
+              )}
+            </div>
+
+            <div className="sort-controls">
+              <label className="sort-label" htmlFor="f-sort">
+                מיון:
+              </label>
+              <select
+                id="f-sort"
+                className="select select-sm"
+                value={query.sortBy}
+                onChange={(e) => updateParams({ sort: e.target.value === 'hourlyRate' ? 'hourlyRate' : undefined })}
+              >
+                <option value="startTime">לפי מועד</option>
+                <option value="hourlyRate">לפי תעריף</option>
+              </select>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => updateParams({ desc: query.descending ? undefined : '1' })}
+                title="החלפת כיוון המיון"
+              >
+                {query.descending ? <ArrowDownWideNarrow size={16} /> : <ArrowUpNarrowWide size={16} />}
+                {query.descending ? 'יורד' : 'עולה'}
               </button>
-            )}
+            </div>
           </div>
-
-          <div className="sort-controls">
-            <label className="sort-label" htmlFor="f-sort">
-              מיון:
-            </label>
-            <select
-              id="f-sort"
-              className="select select-sm"
-              value={query.sortBy}
-              onChange={(e) => updateParams({ sort: e.target.value === 'hourlyRate' ? 'hourlyRate' : undefined })}
-            >
-              <option value="startTime">לפי מועד</option>
-              <option value="hourlyRate">לפי תעריף</option>
-            </select>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => updateParams({ desc: query.descending ? undefined : '1' })}
-              title="החלפת כיוון המיון"
-            >
-              {query.descending ? <ArrowDownWideNarrow size={16} /> : <ArrowUpNarrowWide size={16} />}
-              {query.descending ? 'יורד' : 'עולה'}
-            </button>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ---- תוצאות ---- */}
       {error ? (
@@ -411,29 +412,18 @@ export default function RequestsListPage() {
                 </button>
               }
             />
-          ) : isParent ? (
-            <EmptyState
-              Icon={Inbox}
-              title="אין עדיין בקשות"
-              text="פרסמו את הבקשה הראשונה שלכם."
-              action={
-                <Link to="/requests/new" className="btn btn-primary">
-                  <Plus size={18} />
-                  בקשה חדשה
-                </Link>
-              }
-            />
           ) : (
             <EmptyState
-              Icon={currentSitterView.Icon}
-              title={currentSitterView.emptyTitle}
-              text={currentSitterView.emptyText}
+              Icon={currentView.Icon}
+              title={currentView.emptyTitle}
+              text={currentView.emptyText}
               action={
-                sitterView !== 'all' && (
-                  <button type="button" className="btn btn-secondary" onClick={() => changeSitterView('all')}>
-                    <LayoutGrid size={16} />
-                    לכל הבקשות
-                  </button>
+                isParent &&
+                view === 'open' && (
+                  <Link to="/requests/new" className="btn btn-primary">
+                    <Plus size={18} />
+                    בקשה חדשה
+                  </Link>
                 )
               }
             />
@@ -463,6 +453,9 @@ export default function RequestsListPage() {
           </>
         )
       )}
+
+      {/* לוח השבוע הקרוב - מתחת לכרטיסים, בלשונית "השיבוצים שלי" */}
+      {!isParent && view === 'mine' && <WeekSchedule />}
     </>
   )
 }

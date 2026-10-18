@@ -3,6 +3,7 @@ import { apiRequest } from './client'
 import type {
   AuthResponse,
   LoginRequest,
+  NotificationDto,
   PagedResult,
   RegisterRequest,
   ServiceRequestBody,
@@ -10,6 +11,7 @@ import type {
   ServiceRequestListItem,
   ServiceRequestQuery,
   Tag,
+  UpdateUserRequest,
   UserDto,
 } from './types'
 
@@ -20,6 +22,13 @@ export const babylinkApi = {
 
   login: (body: LoginRequest) =>
     apiRequest<AuthResponse>('/api/tokens', { method: 'POST', body }),
+
+  // הפרופיל של המשתמש המחובר (השרת מחזיר רק את המשתמש עצמו)
+  getUser: (id: number, signal?: AbortSignal) =>
+    apiRequest<UserDto>(`/api/users/${id}`, { signal }),
+
+  updateUser: (id: number, body: UpdateUserRequest) =>
+    apiRequest<UserDto>(`/api/users/${id}`, { method: 'PUT', body }),
 
   // ---- Service requests ----
   getRequests: (query: ServiceRequestQuery, signal?: AbortSignal) =>
@@ -34,6 +43,7 @@ export const babylinkApi = {
   updateRequest: (id: number, body: ServiceRequestBody) =>
     apiRequest<void>(`/api/service-requests/${id}`, { method: 'PUT', body }),
 
+  // ביטול בקשה. אם היא כבר נתפסה - השמרטפית מקבלת הודעה.
   deleteRequest: (id: number) =>
     apiRequest<void>(`/api/service-requests/${id}`, { method: 'DELETE' }),
 
@@ -43,4 +53,14 @@ export const babylinkApi = {
 
   // ---- Tags ----
   getTags: (signal?: AbortSignal) => apiRequest<Tag[]>('/api/tags', { signal }),
+
+  // ---- Notifications ----
+  getNotifications: (signal?: AbortSignal) =>
+    apiRequest<NotificationDto[]>('/api/notifications', { signal }),
+
+  dismissNotification: (id: number) =>
+    apiRequest<void>(`/api/notifications/${id}`, { method: 'DELETE' }),
+
+  dismissAllNotifications: () =>
+    apiRequest<void>('/api/notifications', { method: 'DELETE' }),
 }

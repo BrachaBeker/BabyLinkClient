@@ -1,4 +1,5 @@
-// מסך 3: פרטי בקשה. שמרטפית יכולה לתפוס ("אני לוקחת"), וההורה שפרסם יכול לערוך ולמחוק.
+// מסך 3: פרטי בקשה. שמרטפית יכולה לתפוס ("אני לוקחת"). ההורה שפרסם יכול לערוך (כל עוד לא נתפסה),
+// לבטל - גם אחרי שנתפסה, כי הוא לא מחויב לשמרטפית (ואז היא מקבלת הודעה) - ולפרסם מחדש.
 //
 // תרחיש ה-409: שתי שמרטפיות פותחות את אותה בקשה פנויה. הראשונה לוחצת "אני לוקחת" ומקבלת 200.
 // השנייה עדיין רואה "פנויה" (המסך שלה לא התעדכן), לוחצת - והשרת מחזיר 409. אצלה מוצגת הודעה
@@ -17,7 +18,10 @@ import {
   MapPin,
   Pencil,
   Phone,
+  RefreshCw,
+  Repeat,
   SearchX,
+  ShieldCheck,
   Tag as TagIcon,
   Trash2,
   UserRound,
@@ -42,8 +46,10 @@ import {
   formatDuration,
   formatElapsed,
   formatTimeRange,
+  nextWeeklySlot,
   totalEarnings,
 } from '../../utils/format'
+import { toRepost, type RepostState } from '../form/repost'
 import './details.css'
 
 type Notice =
@@ -70,7 +76,8 @@ export default function RequestDetailsPage() {
     return state?.flash ? { kind: 'success', title: state.flash } : null
   })
   const [assigning, setAssigning] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  // איזה ביטול מחכה לאישור: ביטול רגיל, או ביטול ופרסום מחדש
+  const [confirmMode, setConfirmMode] = useState<'cancel' | 'repost' | null>(null)
   const [deleting, setDeleting] = useState(false)
   const noticeRef = useRef<HTMLDivElement>(null)
   const slowAction = useSlowNotice(assigning || deleting)
@@ -128,7 +135,7 @@ export default function RequestDetailsPage() {
       showNotice({
         kind: 'success',
         title: 'הבקשה שלך!',
-        text: 'תפסת את הבקשה בהצלחה. פרטי ההורה מופיעים למטה - כדאי ליצור קשר ולתאם.',
+        text: 'תפסת את הבקשה בהצלחה. כדאי ליצור קשר עם ההורה ולתאם. אם הבקשה תבוטל - תקבלי על כך הודעה.',
       })
     } catch (err) {
       if (isApiError(err) && err.status === 409) {
@@ -146,18 +153,45 @@ export default function RequestDetailsPage() {
     }
   }
 
-  // ---- מחיקה (ההורה שפרסם) ----
-  async function handleDelete() {
+  // ---- ביטול (ההורה שפרסם) ----
+  // ההורה לא מחויב לשמרטפית שתפסה: אפשר לבטל, ואם רוצים - לפרסם מחדש עם אותם פרטים.
+  // אם הבקשה כבר נתפסה, השרת יוצר לשמרטפית הודעה על הביטול.
+  async function handleCancel() {
+    if (!request || !confirmMode) return
+    const repost = confirmMode === 'repost'
     setDeleting(true)
     try {
       await babylinkApi.deleteRequest(requestId)
-      navigate('/requests', { replace: true, state: { flash: 'הבקשה נמחקה בהצלחה.' } })
+      const sitterNotified = request.isAssigned ? ' השמרטפית תקבל הודעה על הביטול.' : ''
+      if (repost) {
+        navigate('/requests/new', {
+          replace: true,
+          state: {
+            repost: toRepost(request),
+            repostNotice: `הבקשה הקודמת בוטלה.${sitterNotified} בדקו את הפרטים ופרסמו מחדש.`,
+          } satisfies RepostState,
+        })
+      } else {
+        navigate('/requests', { replace: true, state: { flash: `הבקשה בוטלה.${sitterNotified}` } })
+      }
     } catch (err) {
       setDeleting(false)
-      setConfirmDelete(false)
-      showNotice({ kind: 'error', title: 'המחיקה נכשלה', text: isApiError(err) ? err.message : 'אירעה שגיאה.' })
+      setConfirmMode(null)
+      showNotice({ kind: 'error', title: 'הביטול נכשל', text: isApiError(err) ? err.message : 'אירעה שגיאה.' })
       if (isApiError(err) && err.status === 409) await refresh()
     }
+  }
+
+  // "פרסום שוב" של בקשה שמועדה עבר: אותם פרטים, באותו יום ושעה בשבוע הקרוב
+  function handleRepostPast() {
+    if (!request) return
+    const slot = nextWeeklySlot(request.startTimeUtc, request.endTimeUtc)
+    navigate('/requests/new', {
+      state: {
+        repost: { ...toRepost(request), startTimeUtc: slot.startIso, endTimeUtc: slot.endIso },
+        repostNotice: `הפרטים הועתקו מהבקשה ל${formatDate(request.startTimeUtc)}, עם אותו מועד בשבוע הקרוב. בדקו ופרסמו.`,
+      } satisfies RepostState,
+    })
   }
 
   // ---------- Render ----------
@@ -178,8 +212,14 @@ export default function RequestDetailsPage() {
         <div className="card">
           <EmptyState
             Icon={SearchX}
-            title={loadError?.status === 404 ? 'הבקשה לא נמצאה' : 'לא הצלחנו לטעון את הבקשה'}
-            text={loadError?.status === 404 ? 'ייתכן שהיא נמחקה על ידי ההורה.' : loadError?.message}
+            title={
+              loadError?.status === 404
+                ? 'הבקשה לא נמצאה'
+                : loadError?.status === 403
+                  ? 'אין לך גישה לבקשה הזו'
+                  : 'לא הצלחנו לטעון את הבקשה'
+            }
+            text={loadError?.status === 404 ? 'ייתכן שהיא בוטלה על ידי ההורה.' : loadError?.message}
             action={
               <Link to="/requests" className="btn btn-secondary">
                 לרשימת הבקשות
@@ -351,27 +391,53 @@ export default function RequestDetailsPage() {
               </div>
             )}
 
-            {isOwner && (
+            {/* ההורה: בקשה שמועדה עבר - "פרסום שוב" */}
+            {isOwner && request.isExpired && (
               <div className="owner-actions">
-                {request.isAssigned ? (
-                  <>
-                    <button type="button" className="btn btn-secondary btn-block" disabled>
-                      <Pencil size={16} />
-                      עריכה
-                    </button>
-                    <p className="action-hint">
-                      <Lock size={13} /> לא ניתן לערוך בקשה שכבר נתפסה, אבל אפשר למחוק אותה.
-                    </p>
-                  </>
-                ) : (
-                  <Link to={`/requests/${request.id}/edit`} className="btn btn-secondary btn-block">
-                    <Pencil size={16} />
-                    עריכה
-                  </Link>
-                )}
-                <button type="button" className="btn btn-danger-outline btn-block" onClick={() => setConfirmDelete(true)}>
+                <button type="button" className="btn btn-primary btn-block" onClick={handleRepostPast}>
+                  <Repeat size={16} />
+                  פרסום שוב
+                </button>
+                <p className="action-hint">אותם פרטים, באותו יום ושעה בשבוע הקרוב - אפשר לשנות לפני הפרסום.</p>
+              </div>
+            )}
+
+            {/* ההורה: בקשה עתידית שנתפסה - לא מחויבים לשמרטפית */}
+            {isOwner && !request.isExpired && request.isAssigned && (
+              <div className="owner-actions">
+                <div className="owner-note">
+                  <ShieldCheck size={20} />
+                  <div>
+                    <strong>אתם לא מחויבים לשמרטפית שתפסה</strong>
+                    <span>
+                      אם היא לא מתאימה לכם - אפשר לבטל את הבקשה ולפרסם אותה מחדש. השמרטפית תקבל הודעה על הביטול.
+                    </span>
+                  </div>
+                </div>
+                <button type="button" className="btn btn-secondary btn-block" onClick={() => setConfirmMode('repost')}>
+                  <RefreshCw size={16} />
+                  ביטול ופרסום מחדש
+                </button>
+                <button type="button" className="btn btn-danger-outline btn-block" onClick={() => setConfirmMode('cancel')}>
                   <Trash2 size={16} />
-                  מחיקה
+                  ביטול הבקשה
+                </button>
+                <p className="action-hint">
+                  <Lock size={13} /> בקשה שנתפסה לא ניתנת לעריכה.
+                </p>
+              </div>
+            )}
+
+            {/* ההורה: בקשה עתידית שעוד ממתינה לשמרטפית */}
+            {isOwner && !request.isExpired && !request.isAssigned && (
+              <div className="owner-actions">
+                <Link to={`/requests/${request.id}/edit`} className="btn btn-secondary btn-block">
+                  <Pencil size={16} />
+                  עריכה
+                </Link>
+                <button type="button" className="btn btn-danger-outline btn-block" onClick={() => setConfirmMode('cancel')}>
+                  <Trash2 size={16} />
+                  ביטול הבקשה
                 </button>
               </div>
             )}
@@ -379,7 +445,8 @@ export default function RequestDetailsPage() {
             {slowAction && <WakeNote />}
           </section>
 
-          <PersonCard title="ההורה" name={request.parentFullName} phone={request.parentPhone} />
+          {/* פרטי ההורה - לשמרטפית (להורה עצמו זה מיותר) */}
+          {!isOwner && <PersonCard title="ההורה" name={request.parentFullName} phone={request.parentPhone} />}
 
           {/* את זהות השמרטפית שתפסה השרת מחזיר רק להורה שפרסם ולשמרטפית עצמה. לשאר - פרטים לא מזהים בלבד. */}
           {request.isAssigned &&
@@ -415,23 +482,29 @@ export default function RequestDetailsPage() {
       </div>
 
       <ConfirmDialog
-        open={confirmDelete}
-        title="למחוק את הבקשה?"
-        text={
-          request.isAssigned
-            ? `הבקשה כבר נתפסה על ידי ${request.assignedBabysitterFullName ?? 'שמרטפית'}. כדאי לעדכן אותה. לא ניתן לבטל את המחיקה.`
-            : 'הבקשה תוסר מהרשימה. לא ניתן לבטל את הפעולה.'
-        }
-        confirmLabel="כן, למחוק"
+        open={confirmMode !== null}
+        title={confirmMode === 'repost' ? 'לבטל ולפרסם מחדש?' : 'לבטל את הבקשה?'}
+        text={cancelDialogText(request, confirmMode)}
+        confirmLabel={confirmMode === 'repost' ? 'כן, לבטל ולפרסם מחדש' : 'כן, לבטל'}
         busy={deleting}
-        onConfirm={handleDelete}
-        onCancel={() => setConfirmDelete(false)}
+        onConfirm={handleCancel}
+        onCancel={() => setConfirmMode(null)}
       />
     </>
   )
 }
 
 // ---------- רכיבי עזר קטנים למסך ----------
+
+function cancelDialogText(request: ServiceRequestDetails, mode: 'cancel' | 'repost' | null) {
+  const sitter = request.assignedBabysitterFullName ?? 'השמרטפית'
+  if (mode === 'repost') {
+    return `הבקשה הנוכחית תבוטל, ו${sitter} תקבל הודעה על כך בכניסה הבאה שלה. מיד אחר כך ייפתח טופס עם אותם פרטים, כדי לפרסם אותה מחדש לכל השמרטפיות.`
+  }
+  return request.isAssigned
+    ? `${sitter} תקבל הודעה על הביטול בכניסה הבאה שלה. לא ניתן לבטל את הפעולה.`
+    : 'הבקשה תוסר, ושמרטפיות כבר לא יוכלו לתפוס אותה. לא ניתן לבטל את הפעולה.'
+}
 
 function InfoItem({ Icon, label, value }: { Icon: typeof Clock; label: string; value: string }) {
   return (

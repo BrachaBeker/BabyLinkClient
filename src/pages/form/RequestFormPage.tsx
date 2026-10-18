@@ -1,8 +1,9 @@
 // מסך 4: טופס בקשה להורה. אותו טופס משמש ליצירה (POST) ולעריכה (PUT).
-// בעריכה הטופס נטען עם הנתונים הקיימים. הזמנים מוזנים בשעון מקומי ונשלחים לשרת ב-UTC.
-import { ArrowRight, CalendarDays, Check, FileText, Lock, MapPin, Send, Tag as TagIcon } from 'lucide-react'
+// בעריכה הטופס נטען עם הנתונים הקיימים. בבקשה חדשה הכתובת ממולאת מראש מהפרופיל (אפשר לשנות),
+// וב"פרסום מחדש" / "פרסום שוב" - כל הפרטים מהבקשה הקודמת. הזמנים מוזנים בשעון מקומי ונשלחים ב-UTC.
+import { ArrowRight, CalendarDays, Check, FileText, Home, Lock, MapPin, Send, Tag as TagIcon } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { babylinkApi } from '../../api/babylink'
 import { isApiError } from '../../api/client'
 import type { ServiceRequestBody, ServiceRequestDetails } from '../../api/types'
@@ -13,6 +14,7 @@ import FormField from '../../components/FormField'
 import { LoadingState, Spinner, useSlowNotice, WakeNote } from '../../components/Loading'
 import { useTags } from '../../hooks/useTags'
 import { formatCurrency, formatDuration, localInputToUtc, toLocalInputValue, totalEarnings } from '../../utils/format'
+import type { RepostState } from './repost'
 import './form.css'
 
 interface FormState {
@@ -71,6 +73,22 @@ function fromDetails(request: ServiceRequestDetails): FormState {
   }
 }
 
+// "פרסום מחדש": הפרטים מבקשה קודמת
+function fromRepost(body: ServiceRequestBody): FormState {
+  return {
+    start: toLocalInputValue(body.startTimeUtc),
+    end: toLocalInputValue(body.endTimeUtc),
+    city: body.city,
+    street: body.street,
+    houseNumber: body.houseNumber,
+    addressNotes: body.addressNotes ?? '',
+    childrenCount: String(body.childrenCount),
+    hourlyRate: String(body.hourlyRate),
+    description: body.description ?? '',
+    tagIds: body.tagIds,
+  }
+}
+
 // בדיקה מקדימה לנוחות - אותם כללים שהשרת בודק (והשרת הוא הקובע).
 function validate(form: FormState): Errors {
   const errors: Errors = {}
@@ -118,10 +136,16 @@ export default function RequestFormPage() {
   const isEdit = id !== undefined
   const requestId = Number(id)
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const { tags, loading: tagsLoading } = useTags()
 
-  const [form, setForm] = useState<FormState>(defaultForm)
+  // הגענו מ"ביטול ופרסום מחדש" או מ"פרסום שוב"? (רק בבקשה חדשה)
+  const repostState = isEdit ? null : (location.state as RepostState | null)
+  const [form, setForm] = useState<FormState>(() =>
+    repostState?.repost ? fromRepost(repostState.repost) : defaultForm(),
+  )
+  const [addressFromProfile, setAddressFromProfile] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -142,7 +166,7 @@ export default function RequestFormPage() {
         } else if (request.isAssigned) {
           setBlocked({
             title: 'הבקשה כבר נתפסה',
-            text: 'לא ניתן לערוך בקשה שכבר נתפסה. אפשר למחוק אותה ולפרסם בקשה חדשה.',
+            text: 'לא ניתן לערוך בקשה שכבר נתפסה. אפשר לבטל אותה ולפרסם אותה מחדש.',
           })
         } else {
           setForm(fromDetails(request))
@@ -159,6 +183,28 @@ export default function RequestFormPage() {
       })
     return () => controller.abort()
   }, [isEdit, requestId, user?.id])
+
+  // בקשה חדשה: הכתובת מהפרופיל (נשמרה בהרשמה). ממלאים רק אם השדות עדיין ריקים.
+  const hasRepost = Boolean(repostState?.repost)
+  useEffect(() => {
+    if (isEdit || hasRepost || !user) return
+    const controller = new AbortController()
+    babylinkApi
+      .getUser(user.id, controller.signal)
+      .then((profile) => {
+        if (!profile.street || !profile.houseNumber) return
+        setForm((prev) =>
+          prev.city || prev.street || prev.houseNumber
+            ? prev
+            : { ...prev, city: profile.city, street: profile.street ?? '', houseNumber: profile.houseNumber ?? '' },
+        )
+        setAddressFromProfile(true)
+      })
+      .catch(() => {
+        // בלי כתובת שמורה - פשוט ממלאים ידנית
+      })
+    return () => controller.abort()
+  }, [isEdit, hasRepost, user])
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -280,6 +326,7 @@ export default function RequestFormPage() {
       </div>
 
       <form className="stack" onSubmit={handleSubmit} noValidate>
+        {repostState?.repostNotice && <Alert variant="info">{repostState.repostNotice}</Alert>}
         {formError && <Alert variant="error">{formError}</Alert>}
 
         <section className="card card-body">
@@ -321,6 +368,12 @@ export default function RequestFormPage() {
             <MapPin size={18} />
             איפה?
           </h2>
+          {addressFromProfile && (
+            <p className="profile-address-hint">
+              <Home size={14} />
+              הכתובת מהפרופיל שלכם - אפשר לשנות אותה לבקשה הזו.
+            </p>
+          )}
           <div className="form-grid form-grid-address">
             <FormField label="עיר" htmlFor="city" error={errors.city}>
               <input

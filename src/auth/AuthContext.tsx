@@ -22,6 +22,8 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<AuthUser>
   register: (data: RegisterRequest) => Promise<AuthUser>
   logout: () => void
+  // אחרי עדכון הפרופיל - כדי שהשם בסרגל העליון יתעדכן בלי התחברות מחדש
+  updateFullName: (fullName: string) => void
 }
 
 const SESSION_KEY = 'babylink.session'
@@ -89,9 +91,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [login],
   )
 
+  const updateFullName = useCallback((fullName: string) => {
+    setUser((current) => {
+      if (!current) return current
+      const updated = { ...current, fullName }
+      try {
+        const session = JSON.parse(localStorage.getItem(SESSION_KEY) ?? 'null') as StoredSession | null
+        if (session) localStorage.setItem(SESSION_KEY, JSON.stringify({ ...session, user: updated }))
+      } catch {
+        // אם השמירה נכשלה - השם יתעדכן בהתחברות הבאה
+      }
+      return updated
+    })
+  }, [])
+
   const value = useMemo(
-    () => ({ user, sessionExpired, login, register, logout }),
-    [user, sessionExpired, login, register, logout],
+    () => ({ user, sessionExpired, login, register, logout, updateFullName }),
+    [user, sessionExpired, login, register, logout, updateFullName],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

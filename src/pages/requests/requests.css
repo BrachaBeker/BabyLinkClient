@@ -315,11 +315,13 @@
 
 /* בקשה שנתפסה / שעבר מועדה - פחות בולטת */
 .request-card.status-expired,
-.request-card.status-assigned {
+.request-card.status-assigned,
+.request-card.status-done {
   background: #fcfcfe;
 }
 
-.request-card.status-expired .rc-date {
+.request-card.status-expired .rc-date,
+.request-card.status-done .rc-date {
   color: var(--neutral);
   background: var(--neutral-bg);
 }
@@ -373,10 +375,181 @@
 
   .view-tab {
     flex: 1;
-    padding: 0 8px;
+    height: auto;
+    min-height: 40px;
+    padding: 6px 8px;
+    line-height: 1.2;
+    text-align: center;
   }
 
   .view-tab svg {
     display: none;
+  }
+}
+
+/* ---- לוח השיבוצים (בלשונית "השיבוצים שלי") ---- */
+
+.schedule {
+  margin-top: 28px;
+  padding: 20px;
+}
+
+.schedule-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.schedule-head .card-title {
+  margin: 0;
+}
+
+.schedule-head .spinner {
+  color: var(--primary);
+}
+
+.schedule-sum {
+  margin-inline-start: auto;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #14532d;
+  background: var(--success-bg);
+}
+
+.schedule-days {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: opacity 0.2s;
+}
+
+/* "כל הלוח" - אזור עם גלילה */
+.schedule-days.is-expanded {
+  max-height: 540px;
+  overflow-y: auto;
+}
+
+.schedule-days.is-loading {
+  opacity: 0.55;
+}
+
+.schedule-day {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  min-height: 58px;
+  border-bottom: 1px solid var(--border);
+}
+
+.schedule-day:last-child {
+  border-bottom: 0;
+}
+
+.schedule-date {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 10px 14px;
+  border-inline-end: 1px solid var(--border);
+  background: var(--surface-2);
+  line-height: 1.25;
+}
+
+.schedule-date strong {
+  font-size: 0.92rem;
+}
+
+.schedule-date span {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.schedule-day.today .schedule-date {
+  color: var(--primary-600);
+  background: var(--primary-50);
+}
+
+.schedule-day.today .schedule-date span {
+  color: var(--primary-600);
+}
+
+.schedule-slots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.schedule-free {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--subtle);
+}
+
+.schedule-slot {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0 12px;
+  padding: 8px 12px;
+  border: 1px solid #d9d4ff;
+  border-inline-start: 4px solid var(--primary);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--primary-50);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.schedule-slot:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px -12px rgba(70, 55, 200, 0.6);
+}
+
+.slot-time {
+  font-weight: 700;
+  font-size: 0.92rem;
+  direction: rtl;
+}
+
+.slot-place {
+  font-size: 0.88rem;
+}
+
+.slot-meta {
+  grid-column: 1 / -1;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.schedule-end {
+  padding: 12px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: var(--surface-2);
+}
+
+.schedule-toggle {
+  margin-top: 14px;
+}
+
+@media (max-width: 520px) {
+  .schedule {
+    padding: 16px;
+  }
+
+  .schedule-day {
+    grid-template-columns: 84px minmax(0, 1fr);
+  }
+
+  .schedule-slot {
+    grid-template-columns: 1fr;
+    width: 100%;
   }
 }

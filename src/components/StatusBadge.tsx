@@ -1,10 +1,11 @@
-// סטטוס בקשה: פנויה / נתפסה / עבר המועד. (בקשה שנתפסה נשארת "נתפסה" גם אחרי שהמועד עבר.)
+// סטטוס בקשה: פנויה / נתפסה / הסתיימה (נתפסה ומועדה עבר) / עבר המועד (אף אחת לא תפסה).
 interface StatusBadgeProps {
   isAssigned: boolean
   isExpired: boolean
 }
 
 export function getStatus({ isAssigned, isExpired }: StatusBadgeProps) {
+  if (isAssigned && isExpired) return { key: 'done', label: 'הסתיימה' } as const
   if (isAssigned) return { key: 'assigned', label: 'נתפסה' } as const
   if (isExpired) return { key: 'expired', label: 'עבר המועד' } as const
   return { key: 'available', label: 'פנויה' } as const

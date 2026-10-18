@@ -1,7 +1,7 @@
 // מסך 1: התחברות והרשמה. צד אחד - הסבר קצר על BabyLink, צד שני - הטופס עם לשוניות.
 import { CalendarClock, ShieldCheck, Zap } from 'lucide-react'
 import { useState } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import Alert from '../../components/Alert'
 import { Brand } from '../../components/Layout'
@@ -12,22 +12,22 @@ import './auth.css'
 type Mode = 'login' | 'register'
 
 const FEATURES = [
-  { Icon: CalendarClock, title: 'מפרסמים בקשה בדקה', text: 'מועד, כתובת, מספר ילדים ותעריף - וזהו.' },
+  { Icon: CalendarClock, title: 'מפרסמים בקשה בדקה', text: 'הכתובת כבר ממולאת מהפרופיל. מועד, ילדים ותעריף - וזהו.' },
   { Icon: Zap, title: 'הראשונה שתופסת - זוכה', text: 'בלי התכתבויות. שמרטפית לוחצת "אני לוקחת" והבקשה שלה.' },
-  { Icon: ShieldCheck, title: 'פרטים רק למי שצריך', text: 'הכתובת המלאה והטלפון מוצגים בתוך הבקשה עצמה.' },
+  { Icon: ShieldCheck, title: 'ההורה בשליטה', text: 'לא מתאים? מבטלים ומפרסמים מחדש, והשמרטפית מקבלת הודעה.' },
 ]
+
+// אחרי התחברות או הרשמה תמיד מגיעים לרשימת הבקשות (ולא לעמוד האחרון שהיה פתוח).
+const HOME = '/requests'
 
 export default function LoginPage() {
   const { user, sessionExpired } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
   const [mode, setMode] = useState<Mode>('login')
 
-  const from = (location.state as { from?: string } | null)?.from ?? '/requests'
+  if (user) return <Navigate to={HOME} replace />
 
-  if (user) return <Navigate to={from} replace />
-
-  const goNext = () => navigate(from, { replace: true })
+  const goNext = () => navigate(HOME, { replace: true })
 
   return (
     <div className="auth-page">

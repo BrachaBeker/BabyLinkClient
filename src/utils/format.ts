@@ -95,3 +95,45 @@ export function toLocalInputValue(iso: string) {
 export function localInputToUtc(value: string) {
   return new Date(value).toISOString()
 }
+
+// ---- לוח השבוע ----
+
+const weekdayShortFormatter = new Intl.DateTimeFormat('he-IL', { weekday: 'short' })
+const dayMonthFormatter = new Intl.DateTimeFormat('he-IL', { day: 'numeric', month: 'numeric' })
+
+export const formatWeekdayShort = (date: Date) => weekdayShortFormatter.format(date)
+export const formatDayMonth = (date: Date) => dayMonthFormatter.format(date)
+
+// "מפתח" של יום בשעון המקומי - לקיבוץ שיבוצים לפי יום
+export function localDayKey(date: Date) {
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+}
+
+export function startOfLocalDay(date: Date) {
+  const day = new Date(date)
+  day.setHours(0, 0, 0, 0)
+  return day
+}
+
+export function addDays(date: Date, days: number) {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
+
+// "הרגע", "לפני 5 דקות", "לפני שעתיים"
+export function formatTimeAgo(iso: string) {
+  const minutes = (Date.now() - new Date(iso).getTime()) / 60000
+  return minutes < 1 ? 'הרגע' : `לפני ${formatElapsed(iso, new Date().toISOString())}`
+}
+
+// "פרסום שוב" של בקשה שמועדה עבר: אותו יום בשבוע ואותה שעה, בשבוע הקרוב שעוד לא הגיע.
+export function nextWeeklySlot(startIso: string, endIso: string) {
+  const start = new Date(startIso)
+  const end = new Date(endIso)
+  while (start.getTime() <= Date.now() + 60 * 60 * 1000) {
+    start.setDate(start.getDate() + 7)
+    end.setDate(end.getDate() + 7)
+  }
+  return { startIso: start.toISOString(), endIso: end.toISOString() }
+}

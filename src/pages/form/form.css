@@ -94,3 +94,13 @@ input[type='datetime-local'] {
     flex: 1;
   }
 }
+
+/* "הכתובת מהפרופיל שלכם" - מעל שדות הכתובת בבקשה חדשה */
+.profile-address-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -6px 0 14px;
+  font-size: 0.85rem;
+  color: var(--primary-600);
+}

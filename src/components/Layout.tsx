@@ -1,8 +1,9 @@
-// מסגרת לכל המסכים המוגנים: סרגל עליון (לוגו, המשתמש המחובר, יציאה) ותוכן העמוד.
+// מסגרת לכל המסכים המוגנים: סרגל עליון (לוגו, הודעות, המשתמש המחובר - קישור לפרופיל, יציאה) ותוכן העמוד.
 import { Heart, LogOut } from 'lucide-react'
 import { Link, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { roleLabel } from '../utils/format'
+import NotificationsBell from './NotificationsBell'
 
 function initials(fullName: string) {
   return fullName
@@ -39,13 +40,16 @@ export default function Layout() {
 
           {user && (
             <div className="topbar-user">
-              <div className="avatar" aria-hidden="true">
-                {initials(user.fullName)}
-              </div>
-              <div className="user-meta">
-                <span className="user-name">{user.fullName}</span>
-                <span className="user-role">{roleLabel(user.role)}</span>
-              </div>
+              <NotificationsBell />
+              <Link to="/profile" className="user-chip" title="הפרופיל שלי">
+                <span className="avatar" aria-hidden="true">
+                  {initials(user.fullName)}
+                </span>
+                <span className="user-meta">
+                  <span className="user-name">{user.fullName}</span>
+                  <span className="user-role">{roleLabel(user.role)} · הפרופיל שלי</span>
+                </span>
+              </Link>
               <button type="button" className="btn btn-ghost btn-sm" onClick={logout}>
                 <LogOut size={16} />
                 יציאה
