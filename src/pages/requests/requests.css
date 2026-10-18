@@ -1,0 +1,326 @@
+/* מסך רשימת הבקשות */
+
+.list-flash {
+  margin-bottom: 18px;
+}
+
+/* ---- סינון ---- */
+
+.filters {
+  padding: 18px 20px;
+  margin-bottom: 22px;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.filters-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toggle-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.toggle-chip:hover {
+  border-color: var(--primary);
+}
+
+.toggle-chip.on {
+  color: #fff;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.toggle-chip:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-label {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.select-sm {
+  width: auto;
+  height: 34px;
+  padding: 0 10px;
+  font-size: 0.88rem;
+  border-radius: 8px;
+}
+
+/* ---- תוצאות ---- */
+
+.results-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.results-head > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.results-head strong {
+  color: var(--text);
+}
+
+.results-loading {
+  color: var(--primary);
+}
+
+.retry-btn {
+  margin-top: 10px;
+}
+
+.request-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+  transition: opacity 0.2s;
+}
+
+.request-grid.is-refreshing {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* ---- כרטיס בקשה ---- */
+
+.request-card {
+  display: flex;
+  flex-direction: column;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.request-card:hover {
+  transform: translateY(-2px);
+  border-color: #cfc9ff;
+  box-shadow: 0 2px 4px rgba(29, 27, 44, 0.05), 0 18px 36px -18px rgba(70, 55, 200, 0.35);
+}
+
+.request-card:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.rc-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 18px 0;
+}
+
+.rc-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  color: var(--primary-600);
+  background: var(--primary-50);
+  line-height: 1.05;
+}
+
+.rc-day {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.rc-month {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.rc-when {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.rc-when strong {
+  font-size: 1rem;
+}
+
+.rc-when span {
+  font-size: 0.9rem;
+  color: var(--muted);
+  direction: rtl;
+}
+
+.rc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  padding: 16px 18px;
+}
+
+.rc-place {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 1.02rem;
+}
+
+.rc-place svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.rc-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.rc-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.rc-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.rc-rate {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.rc-rate small {
+  margin-inline-start: 4px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.rc-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.request-card:hover .rc-cta svg {
+  transform: translateX(-3px);
+}
+
+.rc-cta svg {
+  transition: transform 0.15s;
+}
+
+/* בקשה שנתפסה / שעבר מועדה - פחות בולטת */
+.request-card.status-expired,
+.request-card.status-assigned {
+  background: #fcfcfe;
+}
+
+.request-card.status-expired .rc-date {
+  color: var(--neutral);
+  background: var(--neutral-bg);
+}
+
+.request-card.status-expired .rc-body,
+.request-card.status-expired .rc-rate {
+  opacity: 0.7;
+}
+
+/* ---- Pagination ---- */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.pagination-info {
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.pagination-info strong {
+  color: var(--text);
+}
+
+@media (max-width: 900px) {
+  .filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .request-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sort-controls {
+    width: 100%;
+  }
+}

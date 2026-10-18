@@ -487,6 +487,60 @@ button, input, select, textarea {
   opacity: 1;
 }
 
+/* ---------- Badges & tags ---------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.badge-available {
+  color: var(--success);
+  background: var(--success-bg);
+}
+
+.badge-assigned {
+  color: var(--primary-600);
+  background: var(--primary-50);
+}
+
+.badge-expired {
+  color: var(--neutral);
+  background: var(--neutral-bg);
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #7a3e12;
+  background: #fdf0e6;
+}
+
 /* ---------- Loading ---------- */
 
 .spinner {

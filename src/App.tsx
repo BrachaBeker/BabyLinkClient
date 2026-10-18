@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import ProtectedRoute from './auth/ProtectedRoute'
 import Layout from './components/Layout'
 import LoginPage from './pages/auth/LoginPage'
+import RequestsListPage from './pages/requests/RequestsListPage'
 
 // עמודים זמניים - יוחלפו במסכים האמיתיים בשלבים הבאים.
 function Placeholder({ title }: { title: string }) {
@@ -15,7 +16,8 @@ export default function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
-          <Route path="/requests" element={<Placeholder title="בקשות שמרטפות" />} />
+          <Route path="/requests" element={<RequestsListPage />} />
+          <Route path="/requests/:id" element={<Placeholder title="פרטי בקשה" />} />
         </Route>
       </Route>
 

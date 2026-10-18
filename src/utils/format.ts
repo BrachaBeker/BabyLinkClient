@@ -15,8 +15,26 @@ export const formatShortDate = (iso: string) => shortDateFormatter.format(new Da
 export const formatTime = (iso: string) => timeFormatter.format(new Date(iso))
 export const formatDateTime = (iso: string) => dateTimeFormatter.format(new Date(iso))
 
+const dayNumberFormatter = new Intl.DateTimeFormat('he-IL', { day: 'numeric' })
+const monthShortFormatter = new Intl.DateTimeFormat('he-IL', { month: 'short' })
+const weekdayFormatter = new Intl.DateTimeFormat('he-IL', { weekday: 'long' })
+
+export const formatDayNumber = (iso: string) => dayNumberFormatter.format(new Date(iso))
+export const formatMonthShort = (iso: string) => monthShortFormatter.format(new Date(iso))
+
 function isSameLocalDay(a: Date, b: Date) {
   return a.toDateString() === b.toDateString()
+}
+
+// "היום" / "מחר" / "יום שלישי"
+export function formatRelativeDay(iso: string) {
+  const date = new Date(iso)
+  const today = new Date()
+  const tomorrow = new Date()
+  tomorrow.setDate(today.getDate() + 1)
+  if (isSameLocalDay(date, today)) return 'היום'
+  if (isSameLocalDay(date, tomorrow)) return 'מחר'
+  return weekdayFormatter.format(date)
 }
 
 // "18:00 - 22:00", ואם המשמרת עוברת חצות: "22:00 - 06:00 (למחרת)"
