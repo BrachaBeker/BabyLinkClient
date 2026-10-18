@@ -108,6 +108,7 @@ export interface ServiceRequestQuery {
   minHourlyRate?: number
   onlyAvailable?: boolean
   mine?: boolean
+  includePast?: boolean
   sortBy?: SortBy
   descending?: boolean
   page?: number

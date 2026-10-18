@@ -39,6 +39,7 @@ import {
   formatDateTime,
   formatDuration,
   formatTimeRange,
+  totalEarnings,
 } from '../../utils/format'
 import './details.css'
 
@@ -291,6 +292,15 @@ export default function RequestDetailsPage() {
             <div className="price">
               {formatCurrency(request.hourlyRate)}
               <span>לשעה</span>
+            </div>
+            <div className="total-box">
+              <span className="total-label">סה"כ לבקשה</span>
+              <strong className="total-value">
+                {formatCurrency(totalEarnings(request.hourlyRate, request.startTimeUtc, request.endTimeUtc))}
+              </strong>
+              <span className="total-calc">
+                {formatCurrency(request.hourlyRate)} × {formatDuration(request.startTimeUtc, request.endTimeUtc)}
+              </span>
             </div>
 
             {canAssign && (

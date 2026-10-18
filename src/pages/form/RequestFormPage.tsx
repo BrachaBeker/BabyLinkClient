@@ -12,7 +12,7 @@ import EmptyState from '../../components/EmptyState'
 import FormField from '../../components/FormField'
 import { LoadingState, Spinner, useSlowNotice, WakeNote } from '../../components/Loading'
 import { useTags } from '../../hooks/useTags'
-import { formatDuration, localInputToUtc, toLocalInputValue } from '../../utils/format'
+import { formatCurrency, formatDuration, localInputToUtc, toLocalInputValue, totalEarnings } from '../../utils/format'
 import './form.css'
 
 interface FormState {
@@ -32,6 +32,8 @@ type Errors = Partial<Record<keyof FormState, string>>
 
 const MAX_HOURS = 24
 const MAX_TAGS = 10
+const MIN_RATE = 20
+const MAX_RATE = 1000
 
 // ברירת מחדל לבקשה חדשה: מחר, 18:00-22:00
 function defaultForm(): FormState {
@@ -90,7 +92,9 @@ function validate(form: FormState): Errors {
   if (!Number.isInteger(children) || children < 1 || children > 10) errors.childrenCount = 'מספר בין 1 ל-10'
 
   const rate = Number(form.hourlyRate)
-  if (!form.hourlyRate || !Number.isFinite(rate) || rate < 1 || rate > 1000) errors.hourlyRate = 'תעריף בין 1 ל-1000 ₪'
+  if (!form.hourlyRate || !Number.isFinite(rate) || rate < MIN_RATE || rate > MAX_RATE) {
+    errors.hourlyRate = `תעריף בין ${MIN_RATE} ל-${MAX_RATE} ₪ לשעה`
+  }
 
   return errors
 }
@@ -250,6 +254,12 @@ export default function RequestFormPage() {
     form.start && form.end && new Date(form.end) > new Date(form.start)
       ? formatDuration(new Date(form.start).toISOString(), new Date(form.end).toISOString())
       : null
+  // רמז חי מתחת לתעריף: סה"כ לבקשה לפי התעריף והשעות שנבחרו
+  const rateValue = Number(form.hourlyRate)
+  const totalHint =
+    durationValid && rateValue >= MIN_RATE && rateValue <= MAX_RATE
+      ? `סה"כ לבקשה: ${formatCurrency(totalEarnings(rateValue, localInputToUtc(form.start), localInputToUtc(form.end)))}`
+      : null
   const nowLocal = toLocalInputValue(new Date().toISOString())
   const cls = (key: keyof FormState, base = 'input') => `${base} ${errors[key] ? 'has-error' : ''}`
 
@@ -375,12 +385,17 @@ export default function RequestFormPage() {
                 onChange={(e) => update('childrenCount', e.target.value)}
               />
             </FormField>
-            <FormField label="תעריף לשעה (₪)" htmlFor="hourlyRate" error={errors.hourlyRate}>
+            <FormField
+              label="תעריף לשעה (₪)"
+              htmlFor="hourlyRate"
+              error={errors.hourlyRate}
+              hint={totalHint ?? `מינימום ${MIN_RATE} ₪ לשעה`}
+            >
               <input
                 id="hourlyRate"
                 type="number"
-                min={1}
-                max={1000}
+                min={MIN_RATE}
+                max={MAX_RATE}
                 step="0.5"
                 inputMode="decimal"
                 placeholder="למשל 50"

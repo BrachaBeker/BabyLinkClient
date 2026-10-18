@@ -61,6 +61,12 @@ const currencyFormatter = new Intl.NumberFormat('he-IL', {
 
 export const formatCurrency = (value: number) => currencyFormatter.format(value)
 
+// סה"כ לבקשה = תעריף לשעה × משך בשעות (כולל חלקי שעה), מעוגל לאגורות.
+export function totalEarnings(hourlyRate: number, startIso: string, endIso: string) {
+  const hours = (new Date(endIso).getTime() - new Date(startIso).getTime()) / 3_600_000
+  return Math.round(hourlyRate * hours * 100) / 100
+}
+
 export function childrenLabel(count: number) {
   return count === 1 ? 'ילד אחד' : `${count} ילדים`
 }

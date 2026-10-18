@@ -32,6 +32,7 @@ function readQuery(params: URLSearchParams): ServiceRequestQuery {
     minHourlyRate: positiveNumber(params.get('minRate')),
     onlyAvailable: params.get('available') === '1',
     mine: params.get('mine') === '1',
+    includePast: params.get('past') === '1',
     sortBy: params.get('sort') === 'hourlyRate' ? 'hourlyRate' : 'startTime',
     descending: params.get('desc') === '1',
     page: positiveNumber(params.get('page')) ?? 1,
@@ -121,7 +122,7 @@ export default function RequestsListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
 
-  const hasFilters = ['city', 'street', 'tag', 'minRate', 'available', 'mine'].some((key) => params.has(key))
+  const hasFilters = ['city', 'street', 'tag', 'minRate', 'available', 'mine', 'past'].some((key) => params.has(key))
 
   function resetFilters() {
     setCityInput('')
@@ -233,8 +234,10 @@ export default function RequestsListPage() {
               onClick={() =>
                 // לשמרטפית "השיבוצים שלי" = בקשות שכבר תפסה, כך שהן אף פעם לא פנויות - הסינונים בלעדיים.
                 // להורה השילוב הגיוני: הבקשות שלי שעוד לא נתפסו.
+                // "פנויה" תמיד עתידית, ולכן גם "כולל עבר" מתבטל.
                 updateParams({
                   available: query.onlyAvailable ? undefined : '1',
+                  ...(!query.onlyAvailable ? { past: undefined } : {}),
                   ...(!isParent && !query.onlyAvailable ? { mine: undefined } : {}),
                 })
               }
@@ -253,6 +256,20 @@ export default function RequestsListPage() {
               }
             >
               {isParent ? 'הבקשות שלי' : 'השיבוצים שלי'}
+            </button>
+            <button
+              type="button"
+              className={`toggle-chip ${query.includePast ? 'on' : ''}`}
+              aria-pressed={query.includePast}
+              onClick={() =>
+                // ברירת המחדל מהשרת: רק בקשות עתידיות. כאן אפשר להוסיף גם את אלה שעבר זמנן.
+                updateParams({
+                  past: query.includePast ? undefined : '1',
+                  ...(!query.includePast ? { available: undefined } : {}),
+                })
+              }
+            >
+              כולל בקשות שעבר זמנן
             </button>
             {hasFilters && (
               <button type="button" className="btn btn-ghost btn-sm" onClick={resetFilters}>
