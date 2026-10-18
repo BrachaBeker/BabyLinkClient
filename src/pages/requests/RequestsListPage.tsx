@@ -230,7 +230,14 @@ export default function RequestsListPage() {
               type="button"
               className={`toggle-chip ${query.onlyAvailable ? 'on' : ''}`}
               aria-pressed={query.onlyAvailable}
-              onClick={() => updateParams({ available: query.onlyAvailable ? undefined : '1' })}
+              onClick={() =>
+                // לשמרטפית "השיבוצים שלי" = בקשות שכבר תפסה, כך שהן אף פעם לא פנויות - הסינונים בלעדיים.
+                // להורה השילוב הגיוני: הבקשות שלי שעוד לא נתפסו.
+                updateParams({
+                  available: query.onlyAvailable ? undefined : '1',
+                  ...(!isParent && !query.onlyAvailable ? { mine: undefined } : {}),
+                })
+              }
             >
               רק פנויות
             </button>
@@ -238,7 +245,12 @@ export default function RequestsListPage() {
               type="button"
               className={`toggle-chip ${query.mine ? 'on' : ''}`}
               aria-pressed={query.mine}
-              onClick={() => updateParams({ mine: query.mine ? undefined : '1' })}
+              onClick={() =>
+                updateParams({
+                  mine: query.mine ? undefined : '1',
+                  ...(!isParent && !query.mine ? { available: undefined } : {}),
+                })
+              }
             >
               {isParent ? 'הבקשות שלי' : 'השיבוצים שלי'}
             </button>
