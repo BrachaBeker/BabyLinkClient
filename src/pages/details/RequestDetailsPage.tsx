@@ -25,6 +25,7 @@ import {
   Tag as TagIcon,
   Trash2,
   UserRound,
+  UserX,
   Zap,
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
@@ -38,6 +39,7 @@ import ConfirmDialog from '../../components/ConfirmDialog'
 import EmptyState from '../../components/EmptyState'
 import { LoadingState, Spinner, useSlowNotice, WakeNote } from '../../components/Loading'
 import StatusBadge from '../../components/StatusBadge'
+import { LIVE_REFRESH_MS, sameData, usePolling } from '../../hooks/usePolling'
 import {
   childrenLabel,
   formatCurrency,
@@ -54,8 +56,31 @@ import './details.css'
 
 type Notice =
   | { kind: 'success'; title: string; text?: string }
+  | { kind: 'info'; title: string; text?: string }
   | { kind: 'conflict'; text: string }
   | { kind: 'error'; title?: string; text: string }
+
+// שינוי שקרה בבקשה בגלל מישהו אחר (התגלה בעדכון החי) - איזו הודעה להציג, אם בכלל
+function describeChange(prev: ServiceRequestDetails, next: ServiceRequestDetails, userId?: number): Notice | null {
+  const isOwner = userId === next.parentId
+  if (!prev.isAssigned && next.isAssigned) {
+    if (isOwner) {
+      return { kind: 'success', title: 'נמצאה שמרטפית!', text: `${next.assignedBabysitterFullName ?? 'שמרטפית'} תפסה את הבקשה.` }
+    }
+    if (next.assignedBabysitterId !== userId) {
+      return { kind: 'info', title: 'הבקשה נתפסה הרגע', text: 'שמרטפית אחרת תפסה את הבקשה הזו.' }
+    }
+  }
+  if (prev.isAssigned && !next.isAssigned) {
+    if (isOwner) {
+      return { kind: 'info', title: 'השמרטפית ביטלה את השיבוץ', text: 'הבקשה חזרה להמתין לשמרטפית.' }
+    }
+    if (prev.assignedBabysitterId !== userId) {
+      return { kind: 'info', title: 'הבקשה התפנתה', text: 'השמרטפית שתפסה ביטלה את השיבוץ - אפשר לתפוס אותה עכשיו.' }
+    }
+  }
+  return null
+}
 
 export default function RequestDetailsPage() {
   const { id } = useParams()
@@ -79,8 +104,12 @@ export default function RequestDetailsPage() {
   // איזה ביטול מחכה לאישור: ביטול רגיל, או ביטול ופרסום מחדש
   const [confirmMode, setConfirmMode] = useState<'cancel' | 'repost' | null>(null)
   const [deleting, setDeleting] = useState(false)
+  // ביטול השיבוץ ע"י השמרטפית שתפסה
+  const [confirmUnassign, setConfirmUnassign] = useState(false)
+  const [unassigning, setUnassigning] = useState(false)
   const noticeRef = useRef<HTMLDivElement>(null)
-  const slowAction = useSlowNotice(assigning || deleting)
+  const busy = assigning || deleting || unassigning
+  const slowAction = useSlowNotice(busy)
 
   // מנקים את ה-flash מה-history כדי שלא יופיע שוב ברענון
   useEffect(() => {
@@ -125,6 +154,33 @@ export default function RequestDetailsPage() {
     requestAnimationFrame(() => noticeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
   }
 
+  // עדכון חי: כל 10 שניות טוענים את הבקשה מחדש בשקט. אם משהו השתנה בגלל מישהו אחר - מסבירים מה קרה.
+  // לא מרעננים באמצע פעולה (תפיסה / ביטול), כדי לא להתנגש בתוצאה שלה.
+  // שימו לב: גם עם עדכון חי, שמרטפית שלוחצת לפני שהמסך התעדכן תקבל 409 - השרת הוא ההגנה האמיתית.
+  const requestRef = useRef(request)
+  useEffect(() => {
+    requestRef.current = request
+  }, [request])
+  usePolling(
+    async () => {
+      if (busy) return
+      try {
+        const fresh = await babylinkApi.getRequest(requestId)
+        const prev = requestRef.current
+        if (!prev || sameData(prev, fresh)) return
+        const change = describeChange(prev, fresh, user?.id)
+        setRequest(fresh)
+        if (change) setNotice(change)
+      } catch (err) {
+        if (isApiError(err) && err.status === 404) {
+          setLoadError({ status: 404, message: 'הבקשה כבר לא קיימת.' })
+        }
+      }
+    },
+    LIVE_REFRESH_MS,
+    !loading && !loadError,
+  )
+
   // ---- תפיסה (שמרטפית) ----
   async function handleAssign() {
     setNotice(null)
@@ -150,6 +206,24 @@ export default function RequestDetailsPage() {
       }
     } finally {
       setAssigning(false)
+    }
+  }
+
+  // ---- ביטול השיבוץ (השמרטפית שתפסה) ----
+  // הבקשה חוזרת להמתין לשמרטפית, וההורה מקבל הודעה. 409 = הבקשה השתנתה בינתיים (למשל ההורה ביטל).
+  async function handleUnassign() {
+    setUnassigning(true)
+    try {
+      await babylinkApi.unassignRequest(requestId)
+      setConfirmUnassign(false)
+      await refresh()
+      showNotice({ kind: 'success', title: 'השיבוץ בוטל', text: 'ההורה קיבל הודעה, והבקשה חזרה לרשימת הפנויות.' })
+    } catch (err) {
+      setConfirmUnassign(false)
+      showNotice({ kind: 'error', title: 'ביטול השיבוץ נכשל', text: isApiError(err) ? err.message : 'אירעה שגיאה.' })
+      if (isApiError(err) && (err.status === 409 || err.status === 404)) await refresh()
+    } finally {
+      setUnassigning(false)
     }
   }
 
@@ -267,6 +341,11 @@ export default function RequestDetailsPage() {
             {notice.text}
           </Alert>
         )}
+        {notice?.kind === 'info' && (
+          <Alert variant="info" title={notice.title} className="details-notice" onClose={() => setNotice(null)}>
+            {notice.text}
+          </Alert>
+        )}
         {notice?.kind === 'error' && (
           <Alert variant="error" title={notice.title} className="details-notice" onClose={() => setNotice(null)}>
             {notice.text}
@@ -369,6 +448,19 @@ export default function RequestDetailsPage() {
                   <span>תפסת את הבקשה {request.assignedAtUtc && formatDateTime(request.assignedAtUtc)}</span>
                 </div>
               </div>
+            )}
+
+            {/* השמרטפית שתפסה יכולה לבטל את השיבוץ עד המועד */}
+            {isSitter && assignedToMe && !request.isExpired && (
+              <button
+                type="button"
+                className="btn btn-danger-outline btn-block"
+                onClick={() => setConfirmUnassign(true)}
+                disabled={busy}
+              >
+                <UserX size={16} />
+                ביטול השיבוץ
+              </button>
             )}
 
             {isSitter && request.isAssigned && !assignedToMe && (
@@ -489,6 +581,16 @@ export default function RequestDetailsPage() {
         busy={deleting}
         onConfirm={handleCancel}
         onCancel={() => setConfirmMode(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmUnassign}
+        title="לבטל את השיבוץ?"
+        text="ההורה יקבל הודעה, והבקשה תחזור לרשימת הפנויות - שמרטפית אחרת תוכל לתפוס אותה."
+        confirmLabel="כן, לבטל את השיבוץ"
+        busy={unassigning}
+        onConfirm={handleUnassign}
+        onCancel={() => setConfirmUnassign(false)}
       />
     </>
   )

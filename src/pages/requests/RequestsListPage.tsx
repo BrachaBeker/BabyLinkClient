@@ -16,7 +16,7 @@ import {
   UserCheck,
   type LucideIcon,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { babylinkApi } from '../../api/babylink'
 import { isApiError } from '../../api/client'
@@ -26,6 +26,7 @@ import Alert from '../../components/Alert'
 import EmptyState from '../../components/EmptyState'
 import { LoadingState, Spinner } from '../../components/Loading'
 import Pagination from '../../components/Pagination'
+import { LIVE_REFRESH_MS, sameData, usePolling } from '../../hooks/usePolling'
 import { useTags } from '../../hooks/useTags'
 import RequestCard from './RequestCard'
 import WeekSchedule from './WeekSchedule'
@@ -199,6 +200,24 @@ export default function RequestsListPage() {
       })
     return () => controller.abort()
   }, [queryKey, reloadKey, isParent])
+
+  // עדכון חי: כל 10 שניות טוענים שוב בשקט (בלי ספינר), ומעדכנים רק אם משהו השתנה -
+  // כך כרטיס שנתפס מתחלף ל"נתפסה", ובקשה חדשה מופיעה, בלי לרענן את הדף.
+  // אם בינתיים השתנו הסינון או העמוד - מתעלמים מהתשובה הישנה.
+  const queryKeyRef = useRef(queryKey)
+  useEffect(() => {
+    queryKeyRef.current = queryKey
+  }, [queryKey])
+  usePolling(
+    async () => {
+      const key = queryKeyRef.current
+      const result = await babylinkApi.getRequests(readQuery(new URLSearchParams(key), isParent))
+      if (key !== queryKeyRef.current) return
+      setData((prev) => (sameData(prev, result) ? prev : result))
+    },
+    LIVE_REFRESH_MS,
+    !loading && !error,
+  )
 
   // אם העמוד הנוכחי כבר לא קיים (למשל אחרי ביטול) - עוברים לעמוד האחרון
   useEffect(() => {

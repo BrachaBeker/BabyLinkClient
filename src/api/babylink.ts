@@ -51,6 +51,10 @@ export const babylinkApi = {
   assignRequest: (id: number) =>
     apiRequest<ServiceRequestDetails>(`/api/service-requests/${id}/assignment`, { method: 'PUT' }),
 
+  // ביטול השיבוץ ע"י השמרטפית שתפסה. ההורה מקבל הודעה, והבקשה חוזרת להמתין.
+  unassignRequest: (id: number) =>
+    apiRequest<void>(`/api/service-requests/${id}/assignment`, { method: 'DELETE' }),
+
   // ---- Tags ----
   getTags: (signal?: AbortSignal) => apiRequest<Tag[]>('/api/tags', { signal }),
 

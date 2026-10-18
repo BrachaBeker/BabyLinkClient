@@ -34,18 +34,24 @@ export interface UpdateUserRequest {
   houseNumber?: string | null
 }
 
-export type NotificationType = 'RequestCancelled'
+// RequestCancelled - ההורה ביטל בקשה שתפסת (לשמרטפית)
+// RequestAssigned - שמרטפית תפסה את הבקשה שלך (להורה)
+// AssignmentCancelled - השמרטפית ביטלה את השיבוץ (להורה)
+export type NotificationType = 'RequestCancelled' | 'RequestAssigned' | 'AssignmentCancelled'
 
 // הודעה למשתמש. פרטי הבקשה שמורים בהודעה, כי בקשה שבוטלה כבר נמחקה.
 export interface NotificationDto {
   id: number
   type: NotificationType
+  // לקישור לפרטי הבקשה (null אם הבקשה כבר נמחקה)
+  requestId: number | null
   requestStartTimeUtc: string
   requestEndTimeUtc: string
   city: string
   street: string
   houseNumber: string
-  parentFullName: string
+  // מי ביצע את הפעולה: ההורה שביטל, או השמרטפית שתפסה / ביטלה
+  actorFullName: string
   createdAtUtc: string
 }
 

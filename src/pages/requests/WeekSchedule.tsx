@@ -1,14 +1,15 @@
 // לוח השיבוצים של השמרטפית: 7 הימים הקרובים, וכל יום עם השיבוצים שלו.
 // "הצג עוד" טוען את כל השיבוצים העתידיים ומציג את כל הלוח (עד השיבוץ האחרון) בתוך אזור גלילה.
-// הנתונים מאותו GET /api/service-requests, עם mine ו-toUtc (טווח השבוע).
+// הנתונים מאותו GET /api/service-requests, עם mine ו-toUtc (טווח השבוע). הלוח מתעדכן חי (Polling).
 import { CalendarDays, ChevronDown, ChevronUp, Coffee } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { babylinkApi } from '../../api/babylink'
 import { isApiError } from '../../api/client'
 import type { ServiceRequestListItem } from '../../api/types'
 import Alert from '../../components/Alert'
 import { Spinner } from '../../components/Loading'
+import { LIVE_REFRESH_MS, sameData, usePolling } from '../../hooks/usePolling'
 import {
   addDays,
   childrenLabel,
@@ -26,7 +27,7 @@ const PAGE_SIZE = 50
 const MAX_PAGES = 10
 
 // כל השיבוצים העתידיים, עמוד אחרי עמוד
-async function loadAllAssignments(signal: AbortSignal) {
+async function loadAllAssignments(signal?: AbortSignal) {
   const all: ServiceRequestListItem[] = []
   for (let page = 1; page <= MAX_PAGES; page++) {
     const result = await babylinkApi.getRequests({ mine: true, sortBy: 'startTime', page, pageSize: PAGE_SIZE }, signal)
@@ -36,7 +37,7 @@ async function loadAllAssignments(signal: AbortSignal) {
   return all
 }
 
-function loadWeek(signal: AbortSignal) {
+function loadWeek(signal?: AbortSignal) {
   const weekEnd = addDays(startOfLocalDay(new Date()), WEEK_DAYS)
   return babylinkApi
     .getRequests({ mine: true, toUtc: weekEnd.toISOString(), sortBy: 'startTime', pageSize: PAGE_SIZE }, signal)
@@ -65,6 +66,22 @@ export default function WeekSchedule() {
       })
     return () => controller.abort()
   }, [expanded])
+
+  // עדכון חי: אותה טעינה כל 10 שניות, בשקט. אם בינתיים עברו בין "השבוע" ל"כל הלוח" - מתעלמים מהתשובה הישנה.
+  const expandedRef = useRef(expanded)
+  useEffect(() => {
+    expandedRef.current = expanded
+  }, [expanded])
+  usePolling(
+    async () => {
+      const wasExpanded = expandedRef.current
+      const list = await (wasExpanded ? loadAllAssignments() : loadWeek())
+      if (wasExpanded !== expandedRef.current) return
+      setItems((prev) => (sameData(prev, list) ? prev : list))
+    },
+    LIVE_REFRESH_MS,
+    !loading && !error,
+  )
 
   // קיבוץ השיבוצים לפי יום (בשעון המקומי)
   const byDay = new Map<string, ServiceRequestListItem[]>()

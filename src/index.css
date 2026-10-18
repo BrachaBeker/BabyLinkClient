@@ -271,10 +271,45 @@ button, input, select, textarea {
   background: var(--danger-bg);
 }
 
+.notif-icon.tone-success {
+  color: var(--success);
+  background: var(--success-bg);
+}
+
+.notif-icon.tone-warning {
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
 .notif-body {
   flex: 1;
   min-width: 0;
   font-size: 0.88rem;
+}
+
+/* הודעה עם קישור לבקשה */
+.notif-link {
+  color: var(--text);
+  border-radius: 8px;
+}
+
+.notif-link:hover strong {
+  color: var(--primary-600);
+}
+
+/* הודעה חדשה שהגיעה תוך כדי עבודה - נענוע קצר */
+.notif-button.ring svg {
+  animation: bell-ring 0.9s ease 2;
+  transform-origin: 50% 4px;
+}
+
+@keyframes bell-ring {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(16deg); }
+  30% { transform: rotate(-14deg); }
+  45% { transform: rotate(10deg); }
+  60% { transform: rotate(-8deg); }
+  75% { transform: rotate(4deg); }
 }
 
 .notif-body strong {
