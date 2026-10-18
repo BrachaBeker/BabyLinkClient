@@ -2,7 +2,7 @@
 
 לקוח React שמדגים את [BabyLink API](https://github.com/BrachaBeker/BabyLinkAPI): Web API ב-.NET 10 לתיווך בין הורים לשמרטפיות. הורה מפרסם בקשת שמרטפות, שמרטפיות רואות ומסננות את הבקשות, ו**הראשונה שתופסת בקשה זוכה בה**. השנייה מקבלת **409 Conflict**, והלקוח מציג לה את זה בצורה ברורה.
 
-> 🔗 לקוח: `<קישור ל-Render>` · שרת: https://babylink-api.onrender.com · Swagger: https://babylink-api.onrender.com/swagger · Repository השרת: https://github.com/BrachaBeker/BabyLinkAPI
+> 🔗 לקוח: https://babylinkclient.onrender.com · שרת: https://babylink-api.onrender.com · Swagger: https://babylink-api.onrender.com/swagger · Repository השרת: https://github.com/BrachaBeker/BabyLinkAPI
 
 ---
 
