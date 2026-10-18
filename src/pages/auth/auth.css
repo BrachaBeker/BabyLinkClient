@@ -1,0 +1,303 @@
+/* מסך ההתחברות וההרשמה */
+
+.auth-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  min-height: 100vh;
+}
+
+/* ---- צד ההסבר ---- */
+
+.auth-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 40px 56px;
+  overflow: hidden;
+  color: #fff;
+  background:
+    radial-gradient(circle at 15% 85%, rgba(255, 138, 101, 0.45), transparent 45%),
+    radial-gradient(circle at 90% 10%, rgba(139, 92, 246, 0.55), transparent 50%),
+    linear-gradient(160deg, #4338ca 0%, #5b4cf0 55%, #7c3aed 100%);
+}
+
+.auth-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to bottom, black, transparent 70%);
+  pointer-events: none;
+}
+
+.auth-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-hero .brand {
+  color: #fff;
+}
+
+.auth-hero .brand-text em {
+  color: #c7c2ff;
+}
+
+.auth-hero .brand-mark {
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.auth-hero-content {
+  max-width: 460px;
+}
+
+.auth-hero h1 {
+  font-size: clamp(2rem, 3.4vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+}
+
+.auth-hero h1 span {
+  color: #ffd2c2;
+}
+
+.auth-hero-lead {
+  margin-top: 16px;
+  font-size: 1.07rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.auth-features {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 36px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.auth-features li {
+  display: flex;
+  gap: 14px;
+}
+
+.auth-feature-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+.auth-features strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.auth-features p {
+  font-size: 0.92rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.auth-hero-foot {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ---- צד הטופס ---- */
+
+.auth-panel {
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+}
+
+.auth-mobile-brand {
+  display: none;
+  margin-bottom: 28px;
+}
+
+.auth-title {
+  font-size: 1.9rem;
+  letter-spacing: -0.02em;
+}
+
+.auth-subtitle {
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 24px 0 20px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--neutral-bg);
+}
+
+.tab {
+  height: 40px;
+  border: 0;
+  border-radius: 9px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tab.active {
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(29, 27, 44, 0.12);
+}
+
+.auth-alert {
+  margin-bottom: 16px;
+}
+
+/* ---- משתמשי דמו ---- */
+
+.demo-users {
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px dashed var(--border-strong);
+}
+
+.demo-title {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.demo-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.demo-chip {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.demo-chip:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary-600);
+}
+
+.demo-chip.active {
+  border-color: var(--primary);
+  color: var(--primary-600);
+  background: var(--primary-50);
+  font-weight: 600;
+}
+
+/* ---- בחירת תפקיד בהרשמה ---- */
+
+.role-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.role-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: right;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.role-option:hover {
+  border-color: #b9b2ff;
+}
+
+.role-option.selected {
+  border-color: var(--primary);
+  background: var(--primary-50);
+}
+
+.role-option:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.role-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  color: var(--primary);
+  background: var(--primary-50);
+  transition: all 0.15s;
+}
+
+.role-option.selected .role-icon {
+  color: #fff;
+  background: var(--primary);
+}
+
+.role-option strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.role-option small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 900px) {
+  .auth-page {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-hero {
+    display: none;
+  }
+
+  .auth-mobile-brand {
+    display: block;
+  }
+
+  .auth-panel {
+    place-items: start center;
+    padding-top: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+  .role-picker {
+    grid-template-columns: 1fr;
+  }
+}
