@@ -230,7 +230,8 @@ export default function RequestDetailsPage() {
     } catch (err) {
       setConfirmUnassign(false)
       showNotice({ kind: 'error', title: 'ביטול השיבוץ נכשל', text: isApiError(err) ? err.message : 'אירעה שגיאה.' })
-      if (isApiError(err) && (err.status === 409 || err.status === 404)) await refresh()
+      // 400 = בינתיים נשארו פחות מ-24 שעות; הרענון חוסם את הכפתור ומציג את ההסבר
+      if (isApiError(err) && [400, 404, 409].includes(err.status)) await refresh()
     } finally {
       setUnassigning(false)
     }
@@ -459,17 +460,28 @@ export default function RequestDetailsPage() {
               </div>
             )}
 
-            {/* השמרטפית שתפסה יכולה לבטל את השיבוץ עד המועד */}
+            {/* השמרטפית שתפסה יכולה לבטל את השיבוץ עד 24 שעות לפני המועד. פחות מזה - הכפתור חסום (גם השרת חוסם) */}
             {isSitter && assignedToMe && !request.isExpired && (
-              <button
-                type="button"
-                className="btn btn-danger-outline btn-block"
-                onClick={() => setConfirmUnassign(true)}
-                disabled={busy}
-              >
-                <UserX size={16} />
-                ביטול השיבוץ
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="btn btn-danger-outline btn-block"
+                  onClick={() => setConfirmUnassign(true)}
+                  disabled={busy || !request.canCancelAssignment}
+                >
+                  <UserX size={16} />
+                  ביטול השיבוץ
+                </button>
+                {!request.canCancelAssignment && (
+                  <div className="state-box state-locked">
+                    <Lock size={20} />
+                    <div>
+                      <strong>אין אפשרות לבטל פחות מ-24 שעות לפני המועד</strong>
+                      <span>אם אינך יכולה להגיע, עליך להשיג מחליפה.</span>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {isSitter && request.isAssigned && !assignedToMe && (

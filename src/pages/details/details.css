@@ -256,6 +256,12 @@
   background: var(--neutral-bg);
 }
 
+/* פחות מ-24 שעות לפני המועד - אי אפשר לבטל את השיבוץ */
+.state-locked {
+  color: #7c3a06;
+  background: var(--warning-bg);
+}
+
 /* ---- אנשי קשר ---- */
 
 .person-card {

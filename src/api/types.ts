@@ -116,6 +116,8 @@ export interface ServiceRequestDetails {
   tags: Tag[]
   isAssigned: boolean
   isExpired: boolean
+  // אפשר לבטל את השיבוץ רק עד 24 שעות לפני המועד (השרת מחשב ואוכף)
+  canCancelAssignment: boolean
 }
 
 // גוף הבקשה ליצירה (POST) ולעריכה (PUT) - אותם שדות.
