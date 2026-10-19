@@ -312,18 +312,7 @@
   font-size: 0.92rem;
 }
 
-.person-hint {
-  font-size: 0.82rem;
-  color: var(--muted);
-}
-
-/* שמרטפית שזהותה חסויה */
-.person-avatar-hidden {
-  color: var(--neutral);
-  background: var(--neutral-bg);
-}
-
-/* מתי נתפסה הבקשה (פרטים לא מזהים) */
+/* מתי נתפסה הבקשה, ותוך כמה זמן מהפרסום */
 .assigned-time {
   display: flex;
   flex-direction: column;
