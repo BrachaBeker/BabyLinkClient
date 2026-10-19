@@ -5,6 +5,7 @@
 // השנייה עדיין רואה "פנויה" (המסך שלה לא התעדכן), לוחצת - והשרת מחזיר 409. אצלה מוצגת הודעה
 // בולטת עם ה-detail מהשרת, והבקשה נטענת מחדש מיד - כך שהיא רואה "נתפסה" ומתי (בלי לדעת מי תפסה).
 import {
+  AlertTriangle,
   ArrowRight,
   Baby,
   CalendarDays,
@@ -437,6 +438,16 @@ export default function RequestDetailsPage() {
 
             {canAssign && (
               <>
+                {/* בקשה שמתחילה בעוד פחות מ-24 שעות: אחרי התפיסה כבר אי אפשר לבטל - מזהירים מראש */}
+                {!request.canCancelAssignment && (
+                  <div className="state-box state-locked">
+                    <AlertTriangle size={20} />
+                    <div>
+                      <strong>הבקשה מתחילה בעוד פחות מ-24 שעות</strong>
+                      <span>אחרי שתתפסי אותה לא תהיה אפשרות לבטל. אם לא תוכלי להגיע, עליך להשיג מחליפה.</span>
+                    </div>
+                  </div>
+                )}
                 <button
                   type="button"
                   className="btn btn-primary btn-lg btn-block take-btn"
@@ -472,7 +483,9 @@ export default function RequestDetailsPage() {
                   <UserX size={16} />
                   ביטול השיבוץ
                 </button>
-                {!request.canCancelAssignment && (
+                {request.canCancelAssignment ? (
+                  <p className="action-hint">אפשר לבטל עד 24 שעות לפני המועד.</p>
+                ) : (
                   <div className="state-box state-locked">
                     <Lock size={20} />
                     <div>
