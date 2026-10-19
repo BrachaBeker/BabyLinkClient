@@ -78,35 +78,6 @@
   flex-wrap: wrap;
 }
 
-.toggle-chip {
-  display: inline-flex;
-  align-items: center;
-  height: 34px;
-  padding: 0 14px;
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  font-size: 0.88rem;
-  font-weight: 500;
-  background: var(--surface);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.toggle-chip:hover {
-  border-color: var(--primary);
-}
-
-.toggle-chip.on {
-  color: #fff;
-  background: var(--primary);
-  border-color: var(--primary);
-}
-
-.toggle-chip:focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
-}
-
 .sort-controls {
   display: flex;
   align-items: center;

@@ -1,5 +1,5 @@
 // מסך 2: רשימת הבקשות, עם לשוניות לפי תפקיד, ו-Pagination.
-// שמרטפית: "פנויות" (ברירת מחדל) ו"השיבוצים שלי" (עם לוח השבוע הקרוב), כולל סינון ומיון.
+// שמרטפית: "פנויות" (ברירת מחדל), "השיבוצים שלי" (עם לוח השבוע הקרוב) ו"היסטוריה"; סינון ומיון בשתי הראשונות.
 // הורה: רק הבקשות שלו (השרת אוכף), בשלוש לשוניות לפי סטטוס - בלי סינון לפי עיר וכו'.
 // הלשונית והסינון נשמרים ב-URL (?view=mine&city=...), כך שרענון או חזרה ממסך הפרטים שומרים עליהם.
 import {
@@ -60,6 +60,13 @@ const SITTER_VIEWS: ViewConfig[] = [
     emptyTitle: 'עדיין לא תפסת בקשות',
     emptyText: 'בקשות שתתפסי יופיעו כאן ובלוח השבוע.',
   },
+  {
+    value: 'past',
+    label: 'היסטוריה',
+    Icon: History,
+    emptyTitle: 'אין עדיין היסטוריה',
+    emptyText: 'שיבוצים שהמועד שלהם עבר יופיעו כאן.',
+  },
 ]
 
 const PARENT_VIEWS: ViewConfig[] = [
@@ -107,16 +114,18 @@ function readQuery(params: URLSearchParams, isParent: boolean): ServiceRequestQu
     return { status: view as RequestStatus, sortBy: 'startTime', descending: view === 'past', page, pageSize: PAGE_SIZE }
   }
 
-  const onlyAvailable = view === 'available'
+  // שמרטפית, היסטוריה: השיבוצים שלה שמועדם עבר, האחרונים קודם (בלי סינון, כמו אצל ההורה)
+  if (view === 'past') {
+    return { mine: true, status: 'past', sortBy: 'startTime', descending: true, page, pageSize: PAGE_SIZE }
+  }
+
   return {
     city: params.get('city') ?? undefined,
     street: params.get('street') ?? undefined,
     tagId: positiveNumber(params.get('tag')),
     minHourlyRate: positiveNumber(params.get('minRate')),
-    onlyAvailable,
+    onlyAvailable: view === 'available',
     mine: view === 'mine',
-    // בקשה פנויה תמיד עתידית, ולכן "כולל עבר" לא רלוונטי לה
-    includePast: !onlyAvailable && params.get('past') === '1',
     sortBy: params.get('sort') === 'hourlyRate' ? 'hourlyRate' : 'startTime',
     descending: params.get('desc') === '1',
     page,
@@ -227,7 +236,9 @@ export default function RequestsListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
 
-  const hasFilters = !isParent && ['city', 'street', 'tag', 'minRate', 'past'].some((key) => params.has(key))
+  // סינון ומיון - לשמרטפית בלבד, ולא בהיסטוריה
+  const showFilters = !isParent && view !== 'past'
+  const hasFilters = showFilters && ['city', 'street', 'tag', 'minRate'].some((key) => params.has(key))
 
   // הלשונית היא ניווט ולא סינון - "ניקוי" משאיר אותה
   function resetFilters() {
@@ -242,10 +253,7 @@ export default function RequestsListPage() {
 
   function changeView(value: View) {
     const isDefault = value === views[0].value
-    updateParams({
-      view: isDefault ? undefined : value,
-      ...(value === 'available' ? { past: undefined } : {}),
-    })
+    updateParams({ view: isDefault ? undefined : value })
   }
 
   function changePage(page: number) {
@@ -297,7 +305,7 @@ export default function RequestsListPage() {
       </div>
 
       {/* ---- סינון ומיון (לשמרטפית בלבד - להורה יש רק את הבקשות שלו) ---- */}
-      {!isParent && (
+      {showFilters && (
         <section className="card filters" aria-label="סינון ומיון">
           <div className="filters-grid">
             <div className="field">
@@ -361,17 +369,6 @@ export default function RequestsListPage() {
 
           <div className="filters-bar">
             <div className="toggle-group">
-              {/* בלשונית "פנויות" אין בקשות שעבר זמנן */}
-              {view === 'mine' && (
-                <button
-                  type="button"
-                  className={`toggle-chip ${query.includePast ? 'on' : ''}`}
-                  aria-pressed={query.includePast}
-                  onClick={() => updateParams({ past: query.includePast ? undefined : '1' })}
-                >
-                  כולל שיבוצים שעבר זמנם
-                </button>
-              )}
               {hasFilters && (
                 <button type="button" className="btn btn-ghost btn-sm" onClick={resetFilters}>
                   <RotateCcw size={15} />
