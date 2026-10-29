@@ -28,8 +28,9 @@
   border: 0;
   border-radius: 50%;
   color: #fff;
-  background: var(--chat-gradient);
-  box-shadow: 0 12px 28px -8px rgba(124, 58, 237, 0.75);
+  /* העיגול עצמו בכחול-סגול המקורי, והטבעת הפועמת סביבו בסגול */
+  background: linear-gradient(135deg, var(--primary), #8b5cf6);
+  box-shadow: 0 12px 28px -8px rgba(91, 76, 240, 0.75);
   cursor: pointer;
   animation: chat-float 3.2s ease-in-out infinite;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -41,14 +42,14 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: var(--chat-gradient);
+  background: var(--chat-violet);
   z-index: -1;
   animation: chat-pulse 2.6s ease-out infinite;
 }
 
 .chat-launcher:hover {
   transform: scale(1.08);
-  box-shadow: 0 16px 34px -8px rgba(124, 58, 237, 0.85);
+  box-shadow: 0 16px 34px -8px rgba(91, 76, 240, 0.85);
   animation-play-state: paused;
 }
 
