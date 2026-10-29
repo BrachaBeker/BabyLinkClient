@@ -27,16 +27,11 @@ export function Brand() {
   )
 }
 
-const CONTACT_EMAIL = 'bb0534155470@gmail.com'
-
 // פוטר תחתון - גם במסכים המוגנים וגם במסך ההתחברות
 export function SiteFooter() {
   return (
     <footer className="site-footer">
-      © {new Date().getFullYear()} BabyLink - שמרטפית בקליק · כל הזכויות שמורות לברכי בקר ·{' '}
-      <a href={`mailto:${CONTACT_EMAIL}`} dir="ltr">
-        {CONTACT_EMAIL}
-      </a>
+      © {new Date().getFullYear()} BabyLink - שמרטפית בקליק · כל הזכויות שמורות לברכי בקר
     </footer>
   )
 }
