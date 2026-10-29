@@ -11,6 +11,9 @@ const CHAT_URL = (import.meta.env.VITE_CHAT_URL ?? '').replace(/\/+$/, '')
 const MAX_QUESTION_LENGTH = 500
 const MAX_HISTORY_MESSAGES = 6
 
+// הטקסט בשדה ההקלדה. כל עוד לא עומדים על השדה - הוא "נכתב" ונמחק שוב ושוב
+const PLACEHOLDER = 'כתבו שאלה...'
+
 // שאלות לדוגמה שמופיעות בפתיחת שיחה חדשה
 const SUGGESTIONS = ['איך מפרסמים בקשה?', 'איך מבטלים שיבוץ?', 'אילו פרטים שלי רואים אחרים?']
 
@@ -59,6 +62,8 @@ export default function ChatWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [inputFocused, setInputFocused] = useState(false)
+  const [typedPlaceholder, setTypedPlaceholder] = useState('')
   // "צריכים עזרה?" - יוצא מהכפתור פעם אחת ודועך אחרי כמה שניות (או כשפותחים את הצ'אט)
   const [showTeaser, setShowTeaser] = useState(false)
   // מספר השיחה. "שיחה חדשה" מעלה אותו, ותשובה שמגיעה לשיחה ישנה נזרקת
@@ -76,10 +81,36 @@ export default function ChatWidget() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, sending])
 
-  // פוקוס לשדה הקלדה בפתיחה, וסגירה ב-Esc
+  // אפקט "מכונת כתיבה" ב-placeholder: אות אחרי אות, הפסקה, מחיקה, וחוזר חלילה.
+  // רץ רק כשהחלון פתוח ולא עומדים על השדה
+  useEffect(() => {
+    if (!open || inputFocused) return
+    let length = 0
+    let deleting = false
+    let timer: number
+
+    function tick() {
+      length += deleting ? -1 : 1
+      setTypedPlaceholder(PLACEHOLDER.slice(0, length))
+
+      let delay = deleting ? 45 : 90 // מחיקה מהירה יותר מכתיבה
+      if (length === PLACEHOLDER.length) {
+        deleting = true
+        delay = 1400 // המשפט המלא נשאר רגע על המסך
+      } else if (length === 0) {
+        deleting = false
+        delay = 500
+      }
+      timer = window.setTimeout(tick, delay)
+    }
+
+    timer = window.setTimeout(tick, 300)
+    return () => window.clearTimeout(timer)
+  }, [open, inputFocused])
+
+  // סגירה ב-Esc
   useEffect(() => {
     if (!open) return
-    inputRef.current?.focus()
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false)
     }
@@ -219,7 +250,10 @@ export default function ChatWidget() {
               className="chat-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="כתבו שאלה..."
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+              // עומדים על השדה - הטקסט המלא בלי אנימציה. אחרת - הטקסט שנכתב עכשיו, עם "סמן" בסופו
+              placeholder={inputFocused ? PLACEHOLDER : `${typedPlaceholder}|`}
               maxLength={MAX_QUESTION_LENGTH}
               aria-label="שאלה לעוזר"
             />
