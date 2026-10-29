@@ -1,9 +1,12 @@
 /* בועת הצ'אט - בפינה השמאלית התחתונה (בממשק RTL זה צד ה-end). משתמש במשתנים של index.css. */
 
 .chat {
-  /* אותו גרדיאנט כמו בדף הכניסה (auth.css): אינדיגו -> סגול ראשי -> סגול כהה */
+  /* אותו רקע כמו בדף הכניסה (auth.css): בסיס כחול-סגול, הילה סגולה למעלה והילה ורודה-חמה למטה */
   --chat-violet: #7c3aed;
-  --chat-gradient: linear-gradient(160deg, #4338ca 0%, var(--primary) 55%, var(--chat-violet) 100%);
+  --chat-gradient:
+    radial-gradient(circle at 15% 85%, rgba(255, 138, 101, 0.45), transparent 45%),
+    radial-gradient(circle at 90% 10%, rgba(139, 92, 246, 0.55), transparent 50%),
+    linear-gradient(160deg, #4338ca 0%, var(--primary) 55%, var(--chat-violet) 100%);
   position: fixed;
   bottom: 24px;
   inset-inline-end: 24px;
