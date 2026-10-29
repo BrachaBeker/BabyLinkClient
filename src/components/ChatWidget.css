@@ -28,8 +28,8 @@
   border: 0;
   border-radius: 50%;
   color: #fff;
-  /* העיגול עצמו בסגול, והטבעת הפועמת סביבו בכחול-סגול של האתר */
-  background: linear-gradient(135deg, #8b5cf6, var(--chat-violet));
+  /* העיגול עצמו בוורוד-סגול, והטבעת הפועמת סביבו בכחול-סגול של האתר */
+  background: linear-gradient(135deg, #f152e8, var(--chat-violet));
   box-shadow: 0 12px 28px -8px rgba(124, 58, 237, 0.75);
   cursor: pointer;
   animation: chat-float 3.2s ease-in-out infinite;
