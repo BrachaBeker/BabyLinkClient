@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import Alert from '../../components/Alert'
-import { Brand } from '../../components/Layout'
+import { Brand, SiteFooter } from '../../components/Layout'
 import LoginForm from './LoginForm'
 import RegisterForm from './RegisterForm'
 import './auth.css'
@@ -56,9 +56,6 @@ export default function LoginPage() {
             ))}
           </ul>
         </div>
-        <p className="auth-hero-foot">
-          פרויקט סיום · <bdi dir="ltr">.NET 10 Web API + React</bdi>
-        </p>
       </aside>
 
       <section className="auth-panel">
@@ -101,6 +98,8 @@ export default function LoginPage() {
 
           {mode === 'login' ? <LoginForm onSuccess={goNext} /> : <RegisterForm onSuccess={goNext} />}
         </div>
+
+        <SiteFooter />
       </section>
     </div>
   )

@@ -83,6 +83,19 @@ button, input, select, textarea {
   padding: 28px 0 64px;
 }
 
+.site-footer {
+  padding: 20px 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.auth-panel .site-footer {
+  border-top: none;
+  padding-bottom: 0;
+}
+
 .topbar {
   position: sticky;
   top: 0;

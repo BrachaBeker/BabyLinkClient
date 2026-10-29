@@ -27,6 +27,20 @@ export function Brand() {
   )
 }
 
+const CONTACT_EMAIL = 'bb0534155470@gmail.com'
+
+// פוטר תחתון - גם במסכים המוגנים וגם במסך ההתחברות
+export function SiteFooter() {
+  return (
+    <footer className="site-footer">
+      © {new Date().getFullYear()} BabyLink · כל הזכויות שמורות ·{' '}
+      <a href={`mailto:${CONTACT_EMAIL}`} dir="ltr">
+        {CONTACT_EMAIL}
+      </a>
+    </footer>
+  )
+}
+
 export default function Layout() {
   const { user, logout } = useAuth()
 
@@ -64,6 +78,8 @@ export default function Layout() {
           <Outlet />
         </div>
       </main>
+
+      <SiteFooter />
     </>
   )
 }
