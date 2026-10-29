@@ -15,6 +15,8 @@
 
 **פעמון הודעות:** "נמצאה שמרטפית!" ו"השמרטפית ביטלה את השיבוץ" להורה (עם קישור לבקשה), ו"בקשה שתפסת בוטלה" לשמרטפית. בכניסה הרשימה נפתחת לבד, והודעה חדשה מנענעת את הפעמון.
 
+**בועת צ'אט** (בכל המסכים, גם בלי התחברות): עוזר שעונה על שאלות על האתר לפי מסמכי הידע, עם מקורות. השירות: [BabyLinkRAG](https://github.com/BrachaBeker/BabyLinkRAG).
+
 ## תרחיש ה-409
 1. שני דפדפנים (או חלון רגיל וחלון בסתר) עם `sitter1@babylink.dev` ו-`sitter2@babylink.dev`, באותה בקשה **פנויה**.
 2. בראשון "אני לוקחת" ← הודעה ירוקה, והסטטוס מתחלף ל"נתפסה".
@@ -34,11 +36,11 @@
 דרישות: Node.js 20 ומעלה, והשרת רץ על `http://localhost:5083` (ראו ה-README של השרת).
 ```bash
 npm install
-cp .env.example .env    # VITE_API_URL=http://localhost:5083
+cp .env.example .env    # VITE_API_URL=http://localhost:5083, VITE_CHAT_URL=http://localhost:8000
 npm run dev             # http://localhost:5173 (השרת מאפשר CORS רק לפורט הזה)
 ```
 **משתמשי דמו** (סיסמה `Demo123!`): `parent1@babylink.dev`, `parent2@babylink.dev`, `sitter1@babylink.dev`, `sitter2@babylink.dev`.
 
 ## פריסה (Render Static Site)
-- Build: `npm install && npm run build` · Publish: `dist` · Environment: `VITE_API_URL=https://babylink-api.onrender.com`.
+- Build: `npm install && npm run build` · Publish: `dist` · Environment: `VITE_API_URL=https://babylink-api.onrender.com`, `VITE_CHAT_URL` (כתובת שירות הצ'אט).
 - **Rewrite** מ-`/*` ל-`/index.html`, אחרת F5 בעמוד פנימי מחזיר 404. בשרת: `Cors__AllowedOrigins__0` עם כתובת הלקוח, בלי `/` בסוף.
