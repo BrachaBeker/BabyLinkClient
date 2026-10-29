@@ -33,7 +33,7 @@ const CONTACT_EMAIL = 'bb0534155470@gmail.com'
 export function SiteFooter() {
   return (
     <footer className="site-footer">
-      © {new Date().getFullYear()} BabyLink · כל הזכויות שמורות ·{' '}
+      © {new Date().getFullYear()} BabyLink - שמרטפית בקליק · כל הזכויות שמורות לברכי בקר ·{' '}
       <a href={`mailto:${CONTACT_EMAIL}`} dir="ltr">
         {CONTACT_EMAIL}
       </a>
