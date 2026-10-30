@@ -8,8 +8,9 @@
     radial-gradient(circle at 90% 10%, rgba(139, 92, 246, 0.55), transparent 50%),
     linear-gradient(160deg, #4338ca 0%, var(--primary) 55%, var(--chat-violet) 100%);
   position: fixed;
-  bottom: 24px;
-  inset-inline-end: 24px;
+  /* קצת פנימה מהפינה, ולא צמוד לקצה המסך */
+  bottom: 36px;
+  inset-inline-end: 56px;
   z-index: 45; /* מעל הסרגל וההודעות, מתחת לחלונות אישור (modal) */
   display: flex;
   flex-direction: column;
@@ -105,7 +106,7 @@
   display: flex;
   flex-direction: column;
   width: 370px;
-  height: min(560px, calc(100vh - 130px));
+  height: min(560px, calc(100vh - 142px));
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -491,8 +492,8 @@
 
 @media (max-width: 720px) {
   .chat {
-    bottom: 16px;
-    inset-inline-end: 16px;
+    bottom: 24px;
+    inset-inline-end: 24px;
   }
 
   /* החלון ברוחב המסך, מעל הכפתור */
@@ -500,9 +501,9 @@
     position: fixed;
     right: 12px;
     left: 12px;
-    bottom: 90px;
+    bottom: 94px;
     width: auto;
-    height: min(560px, calc(100dvh - 110px));
+    height: min(560px, calc(100dvh - 114px));
   }
 
   .chat-launcher {

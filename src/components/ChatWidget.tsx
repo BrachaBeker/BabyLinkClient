@@ -174,7 +174,7 @@ export default function ChatWidget() {
             </span>
             <div className="chat-head-text">
               <strong>העוזר של BabyLink</strong>
-              <span className="chat-status">עונה על שאלות על האתר</span>
+              <span className="chat-status">עונה לשאלות על האתר</span>
             </div>
             <button
               type="button"
