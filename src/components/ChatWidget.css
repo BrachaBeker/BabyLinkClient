@@ -309,6 +309,24 @@
   border-color: #f6c9c9;
 }
 
+/* אימייל / טלפון בתשובה - תגית לחיצה, משמאל לימין ומבודדת מהעברית סביבה */
+.chat-contact {
+  display: inline-block;
+  padding: 0 7px;
+  border-radius: 6px;
+  font-weight: 600;
+  color: var(--primary-600);
+  background: var(--primary-50);
+  text-decoration: none;
+  white-space: nowrap;
+  unicode-bidi: isolate;
+  transition: background 0.15s;
+}
+
+.chat-contact:hover {
+  background: var(--primary-100);
+}
+
 .chat-sources {
   display: flex;
   flex-wrap: wrap;

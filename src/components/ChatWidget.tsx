@@ -57,6 +57,24 @@ async function askChat(question: string, history: ChatMessage[]): Promise<ChatRe
   return response.json()
 }
 
+// אימייל או טלפון (כמו 053-4155470) בתוך תשובה
+const CONTACT_PATTERN = /([\w.+-]+@[\w-]+(?:\.[\w-]+)+|0\d{1,2}-?\d{7})/g
+
+// מציג תשובה של העוזר: אימייל וטלפון הופכים ל"תגית" שאפשר ללחוץ עליה (פותחת מייל / חיוג).
+// התגית נכתבת משמאל לימין ומבודדת משאר המשפט, כדי שלא "תתבלגן" בתוך טקסט בעברית
+function renderAnswer(text: string) {
+  // split עם סוגריים בתבנית מחזיר: [טקסט, התאמה, טקסט, התאמה, ...] - ההתאמות במקומות האי-זוגיים
+  return text.split(CONTACT_PATTERN).map((part, i) => {
+    if (i % 2 === 0) return part
+    const href = part.includes('@') ? `mailto:${part}` : `tel:${part.replace(/-/g, '')}`
+    return (
+      <a key={i} href={href} dir="ltr" className="chat-contact">
+        {part}
+      </a>
+    )
+  })
+}
+
 export default function ChatWidget() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -217,7 +235,7 @@ export default function ChatWidget() {
 
             {messages.map((m, i) => (
               <div key={i} className={`chat-msg chat-msg-${m.role} ${m.isError ? 'is-error' : ''}`}>
-                <div className="chat-bubble">{m.content}</div>
+                <div className="chat-bubble">{m.role === 'assistant' ? renderAnswer(m.content) : m.content}</div>
                 {m.sources && m.sources.length > 0 && (
                   <div className="chat-sources">
                     <span>מקורות:</span>
